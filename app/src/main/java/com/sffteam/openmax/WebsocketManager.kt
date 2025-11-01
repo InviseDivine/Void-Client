@@ -13,13 +13,22 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.modules.contextual
 import kotlinx.serialization.modules.subclass
 import java.util.UUID
 
 private const val API_VERSION = 11
-private const val USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0 Safari/537.36"
+private const val USER_AGENT =
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0 Safari/537.36"
 
-private val Seq = 0
+private var Seq = 0
 
 enum class OPCode(val opcode: Int) {
     PING(1),
@@ -40,8 +49,6 @@ enum class OPCode(val opcode: Int) {
     SESSIONS(96), // Used for obtain all sessions for account
     SYNC_FOLDER(272)
 }
-@Serializable
-sealed interface BasePacket
 
 @Serializable
 data class Packet(
@@ -54,8 +61,8 @@ data class Packet(
     @SerialName("opcode")
     val opcode: OPCode,
     @SerialName("payload")
-    @Contextual val payload: List<@Polymorphic Any>) : BasePacket
-
+    val payload: JsonElement,
+)
 
 object WebsocketManager {
     private val client = OkHttpClient()
@@ -70,23 +77,32 @@ object WebsocketManager {
             .addHeader("user_agent_header", USER_AGENT)
             .addHeader("Origin", "https://web.max.ru")
             .build()
+
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 println("opened")
                 // Sending welcome package
-                SendPacket(OPCode.START, listOf(Pair("userAgent", listOf(
-                    Pair("deviceType", "WEB"),
-                    Pair("locale", "ru"),
-                    Pair("deviceLocale", "ru"),
-                    Pair("osVersion", "Linux"),
-                    Pair("deviceName", "Chrome"),
-                    Pair("headerUserAgent", USER_AGENT),
-                    Pair("appVersion", "25.10.13"),
-                    Pair("screen", "1080x1920 1.0x"),
-                    Pair("timezone", "Europe/Moscow"),
-                )),
-                    Pair("deviceId", UUID.randomUUID().toString())
-                ))
+                SendPacket(
+                    OPCode.START,
+                    JsonObject(
+                        mapOf(
+                            "userAgent" to JsonObject(
+                                mapOf(
+                                    "deviceType" to JsonPrimitive("WEB"),
+                                    "locale" to JsonPrimitive("ru"),
+                                    "deviceLocale" to JsonPrimitive("ru"),
+                                    "osVersion" to JsonPrimitive("Linux"),
+                                    "deviceName" to JsonPrimitive("Chrome"),
+                                    "headerUserAgent" to JsonPrimitive(USER_AGENT),
+                                    "appVersion" to JsonPrimitive("25.10.13"),
+                                    "screen" to JsonPrimitive("1080x1920 1.0x"),
+                                    "timezone" to JsonPrimitive("Europe/Moscow"),
+                                )
+                            ),
+                            "deviceId" to JsonPrimitive(UUID.randomUUID().toString())
+                        )
+                    )
+                )
                 println("opened")
 
                 onConnected?.invoke()
@@ -111,38 +127,26 @@ object WebsocketManager {
             }
         })
     }
+
     fun SendPing() {
 
     }
-    fun SendPacket(opcode: OPCode, payload: List<Any>) {
-        println("test1")
+
+    fun SendPacket(opcode: OPCode, payload: JsonElement) {
         val packet = Packet(opcode = opcode, payload = payload)
-        println("test2")
-        Log.i("tag", "penis")
-        try {
-//            val pairAnyAnySerializer = PairSerializer(
-//                    PolymorphicSerializer(Any::class), PolymorphicSerializer(Any::class)) as <KSerializer<Pair<*, *>>>()
-            val json = Json { encodeDefaults = true
-                serializersModule = SerializersModule {
-                    polymorphic(Any::class) {
-                        subclass(String::class, PolymorphicSerializer(String.serializer()))
-                        subclass(Int::class, PolymorphicPrimitiveSerializer(Int.serializer()))
-                    }
-                }
-                prettyPrint = true
-            }
-            val item = json.encodeToString(packet)
-            println(item)
-        } catch (e: SerializationException) {
-            println("Failed to decode JSON: ${e.message}")
-        } catch (e: IllegalArgumentException) {
-            println("Invalid input: ${e.message}")
+
+        val json = Json {
+            encodeDefaults = true
+            prettyPrint = true
         }
 
-        println(packet)
-        Log.i("tag", packet.toString())
+        val stringPacket = json.encodeToString(packet)
 
-        webSocket?.send(Json.encodeToString(packet))
+        println(stringPacket)
+
+        webSocket?.send(stringPacket)
+
+        Seq += 1
     }
 
     fun subscribe(callback: (String) -> Unit) {

@@ -11,6 +11,9 @@ import android.widget.AdapterView
 import android.content.Intent
 import android.util.Log
 import com.sffteam.openmax.WebsocketManager
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +27,8 @@ class MainActivity : AppCompatActivity() {
         val phonecodes = arrayOf("+7", "+375")
         var currentcode = "+7"
 
-        val arrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, phonecodes)
+        val arrayAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, phonecodes)
 
         spinner.adapter = arrayAdapter
 
@@ -33,14 +37,21 @@ class MainActivity : AppCompatActivity() {
             val phone = currentcode + input.text
             intent.putExtra("number", phone)
 
-            WebsocketManager.SendPacket(OPCode.START_AUTH, listOf(
-                Pair("phone", phone),
-                Pair("type", "START_AUTH"),
-                Pair("language", "ru")))
+            WebsocketManager.SendPacket(
+                OPCode.START_AUTH,
+                JsonObject(
+                    mapOf(
+                        "phone" to JsonPrimitive(phone),
+                        "type" to JsonPrimitive("START_AUTH"),
+                        "language" to JsonPrimitive("ru")
+                    )
+                )
+            )
+
             startActivity(intent)
         }
 
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
                 currentcode = phonecodes[p2]
             }
