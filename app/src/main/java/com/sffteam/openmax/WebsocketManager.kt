@@ -41,7 +41,7 @@ data class Packet(val ver: Int = API_VERSION, val cmd: Int = 0, val seq: Int = S
 object WebsocketManager {
     private val client = OkHttpClient()
     private var webSocket: WebSocket? = null
-    private const val url = "wss://demo.piesocket.com/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3eiVjgZ9VRiaV&notify_self"
+    private const val url = "wss://ws-api.oneme.ru/websocket"
 
     private val subscribers = CopyOnWriteArrayList<(String) -> Unit>()
 
