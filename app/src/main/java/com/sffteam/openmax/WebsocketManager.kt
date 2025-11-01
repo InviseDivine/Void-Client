@@ -7,7 +7,13 @@ import java.util.concurrent.CopyOnWriteArrayList
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import kotlinx.serialization.*
+import kotlinx.serialization.PolymorphicSerializer
+import kotlinx.serialization.builtins.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.modules.subclass
 import java.util.UUID
 
 private const val API_VERSION = 11
@@ -34,9 +40,22 @@ enum class OPCode(val opcode: Int) {
     SESSIONS(96), // Used for obtain all sessions for account
     SYNC_FOLDER(272)
 }
+@Serializable
+sealed interface BasePacket
 
 @Serializable
-data class Packet(val ver: Int = API_VERSION, val cmd: Int = 0, val seq: Int = Seq, val opcode: OPCode, @Contextual val payload: List<@Polymorphic Any>)
+data class Packet(
+    @SerialName("ver")
+    val ver: Int = API_VERSION,
+    @SerialName("cmd")
+    val cmd: Int = 0,
+    @SerialName("seq")
+    val seq: Int = Seq,
+    @SerialName("opcode")
+    val opcode: OPCode,
+    @SerialName("payload")
+    @Contextual val payload: List<@Polymorphic Any>) : BasePacket
+
 
 object WebsocketManager {
     private val client = OkHttpClient()
@@ -96,8 +115,30 @@ object WebsocketManager {
 
     }
     fun SendPacket(opcode: OPCode, payload: List<Any>) {
+        println("test1")
         val packet = Packet(opcode = opcode, payload = payload)
-        println(Json.encodeToString(packet))
+        println("test2")
+        Log.i("tag", "penis")
+        try {
+//            val pairAnyAnySerializer = PairSerializer(
+//                    PolymorphicSerializer(Any::class), PolymorphicSerializer(Any::class)) as <KSerializer<Pair<*, *>>>()
+            val json = Json { encodeDefaults = true
+                serializersModule = SerializersModule {
+                    polymorphic(Any::class) {
+                        subclass(String::class, PolymorphicSerializer(String.serializer()))
+                        subclass(Int::class, PolymorphicPrimitiveSerializer(Int.serializer()))
+                    }
+                }
+                prettyPrint = true
+            }
+            val item = json.encodeToString(packet)
+            println(item)
+        } catch (e: SerializationException) {
+            println("Failed to decode JSON: ${e.message}")
+        } catch (e: IllegalArgumentException) {
+            println("Invalid input: ${e.message}")
+        }
+
         println(packet)
         Log.i("tag", packet.toString())
 
