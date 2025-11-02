@@ -16,23 +16,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
+import kotlinx.serialization.json.Json
+import com.sffteam.openmax.WebsocketManager
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlin.collections.contains
+
 
 class CodeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val phone = intent.getStringExtra("number")
-
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
-
         setContent {
-            val code = remember{mutableStateOf("")}
+            val code = remember { mutableStateOf("") }
+            val errorText = remember { mutableStateOf("") }
 
             Column(
                 modifier = Modifier.fillMaxWidth().fillMaxHeight(),
@@ -42,18 +48,45 @@ class CodeActivity : ComponentActivity() {
                 TextField(
                     value = code.value,
                     onValueChange = {
-                        newText -> code.value = newText }, // Lambda to update the state when text changes
-                    label = { Text("Введите код из СМС") }, // Optional label for the text field
+                        newText -> code.value = newText },
+                    label = { Text("Введите код из СМС") },
                     textStyle = TextStyle(fontSize = 25.sp),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                     )
                 )
+                Text(errorText.value,
+                    color = Color.White,
+                    fontSize = 25.sp
+                )
 
                 val context = LocalContext.current
                 Button(
                     onClick = {
-
+                        WebsocketManager.SendPacket(
+                            OPCode.CHECK_CODE.opcode,
+                            JsonObject(
+                                mapOf(
+                                    "token" to JsonPrimitive(intent.getStringExtra("token").toString()),
+                                    "verifyCode" to JsonPrimitive(code.value),
+                                    "authTokenType" to JsonPrimitive("CHECK_CODE")
+                                )
+                            ),
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    if ("error" in packet.payload) {
+                                        errorText.value = packet.payload["localizedMessage"].toString()
+                                    } else if ("tokenAttrs" in packet.payload) {
+                                        println(packet.payload)
+                                        // Now we need TODO chat list....
+                                        // pizdec
+                                    } else {
+                                        println("wtf")
+                                    }
+                                }
+                            }
+                        )
                     }
                 ) {
                     Text("Войти", fontSize = 25.sp)

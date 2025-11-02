@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val phone = remember { mutableStateOf("") }
+            val errorText = remember { mutableStateOf("") }
 
             Column(
                 modifier = Modifier
@@ -45,6 +48,11 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Text(errorText.value,
+                        color = Color.White,
+                        fontSize = 25.sp
+                    )
+
                 TextField(
                     value = phone.value,
                     onValueChange = { newText ->
@@ -52,11 +60,10 @@ class MainActivity : ComponentActivity() {
                     }, // Lambda to update the state when text changes
                     label = { Text("Введите номер телефона") }, // Optional label for the text field
                     textStyle = TextStyle(fontSize = 25.sp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        capitalization = KeyboardCapitalization.Sentences
-                    )
-
+//                    keyboardOptions = KeyboardOptions(
+//                        keyboardType = KeyboardType.Number,
+//                        capitalization = KeyboardCapitalization.Sentences
+//                    )
                 )
 
                 val context = LocalContext.current
@@ -77,17 +84,17 @@ class MainActivity : ComponentActivity() {
                                 println(packet.payload)
                                 if (packet.payload is JsonObject) {
                                     if ("error" in packet.payload) {
-                                        println("ERROR!")
+                                        errorText.value = packet.payload["localizedMessage"].toString()
                                     } else if ("token" in packet.payload) {
                                         println("token " + packet.payload["token"])
+                                        intent.putExtra("token", packet.payload["token"].content)
+                                        context.startActivity(intent)
                                     } else {
                                         println("wtf")
                                     }
                                 }
                             }
                         )
-
-                        context.startActivity(intent)
                     }
                 ) {
                     Text("Продолжить", fontSize = 25.sp)
