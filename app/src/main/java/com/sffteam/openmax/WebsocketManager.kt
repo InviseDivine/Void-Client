@@ -12,6 +12,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.UUID
+import kotlinx.coroutines.*
+import kotlinx.coroutines.time.delay
+import kotlin.time.Duration.Companion.seconds
 
 private const val API_VERSION = 11
 private const val USER_AGENT =
@@ -117,8 +120,19 @@ object WebsocketManager {
         })
     }
 
-    fun SendPing() {
-
+    suspend fun SendPing() = coroutineScope {
+        launch {
+            while (true) {
+                delay(25.seconds)
+                SendPacket(OPCode.PING.opcode,
+                    JsonObject(
+                        mapOf(
+                            "interactive" to JsonPrimitive(true),
+                        )
+                    ))
+                println("ping!")
+            }
+        }
     }
 
     fun SendPacket(opcode: Int, payload: JsonElement) {

@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "OpenMAX"
+rootProject.name = "OpenMax"
 include(":app")
  

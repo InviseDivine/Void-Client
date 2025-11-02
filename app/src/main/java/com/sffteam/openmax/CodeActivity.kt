@@ -1,25 +1,72 @@
 package com.sffteam.openmax
 
+import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Spinner
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.sp
+import androidx.core.view.KeyEventDispatcher
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
-class CodeActivity : AppCompatActivity() {
+class CodeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_code)
-
-        val input = findViewById<EditText>(R.id.editTextCode)
-        val button = findViewById<Button>(R.id.buttonjoin)
+        enableEdgeToEdge()
 
         val phone = intent.getStringExtra("number")
 
-        Toast.makeText(this, phone, Toast.LENGTH_SHORT).show()
+        val view = this.window.decorView;
+        view.setBackgroundColor(resources.getColor(R.color.black, null))
+
+        setContent {
+            val code = remember{mutableStateOf("")}
+
+            Column(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                TextField(
+                    value = code.value,
+                    onValueChange = {
+                        newText -> code.value = newText }, // Lambda to update the state when text changes
+                    label = { Text("Введите код из СМС") }, // Optional label for the text field
+                    textStyle = TextStyle(fontSize = 25.sp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                    )
+                )
+
+                val context = LocalContext.current
+                Button(
+                    onClick = {
+
+                    }
+                ) {
+                    Text("Войти", fontSize = 25.sp)
+                }
+            }
+
+        }
     }
 }
