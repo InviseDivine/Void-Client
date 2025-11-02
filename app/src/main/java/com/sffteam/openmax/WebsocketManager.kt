@@ -7,21 +7,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import kotlinx.serialization.*
-import kotlinx.serialization.PolymorphicSerializer
-import kotlinx.serialization.builtins.*
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.modules.contextual
-import kotlinx.serialization.modules.subclass
 import java.util.UUID
 
 private const val API_VERSION = 11
@@ -59,7 +48,7 @@ data class Packet(
     @SerialName("seq")
     val seq: Int = Seq,
     @SerialName("opcode")
-    val opcode: OPCode,
+    val opcode: Int,
     @SerialName("payload")
     val payload: JsonElement,
 )
@@ -83,7 +72,7 @@ object WebsocketManager {
                 println("opened")
                 // Sending welcome package
                 SendPacket(
-                    OPCode.START,
+                    OPCode.START.opcode,
                     JsonObject(
                         mapOf(
                             "userAgent" to JsonObject(
@@ -132,7 +121,7 @@ object WebsocketManager {
 
     }
 
-    fun SendPacket(opcode: OPCode, payload: JsonElement) {
+    fun SendPacket(opcode: Int, payload: JsonElement) {
         val packet = Packet(opcode = opcode, payload = payload)
 
         val json = Json {

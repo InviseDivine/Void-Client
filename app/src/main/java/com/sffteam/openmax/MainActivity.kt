@@ -9,9 +9,6 @@ import android.widget.ArrayAdapter;
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.AdapterView
 import android.content.Intent
-import android.util.Log
-import com.sffteam.openmax.WebsocketManager
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -38,7 +35,7 @@ class MainActivity : AppCompatActivity() {
             intent.putExtra("number", phone)
 
             WebsocketManager.SendPacket(
-                OPCode.START_AUTH,
+                OPCode.START_AUTH.opcode,
                 JsonObject(
                     mapOf(
                         "phone" to JsonPrimitive(phone),
