@@ -1,19 +1,23 @@
 package com.sffteam.openmax
 
 import android.util.Log
-import okhttp3.*
-import okio.ByteString
-import java.util.concurrent.CopyOnWriteArrayList
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import kotlinx.serialization.*
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import okio.ByteString
 import java.util.UUID
-import kotlinx.coroutines.*
-import kotlinx.coroutines.time.delay
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.seconds
 
 private const val API_VERSION = 11
@@ -56,12 +60,16 @@ data class Packet(
     val payload: JsonElement,
 )
 
+data class PacketCallback(val seq: Int, val callback: (Packet) -> Unit)
+
 object WebsocketManager {
     private val client = OkHttpClient()
     private var webSocket: WebSocket? = null
     private const val url = "wss://ws-api.oneme.ru/websocket"
 
     private val subscribers = CopyOnWriteArrayList<(String) -> Unit>()
+
+    private var packetCallbacks = mutableListOf<PacketCallback>()
 
     fun Connect(onConnected: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
         val request = Request.Builder()
@@ -93,7 +101,11 @@ object WebsocketManager {
                             ),
                             "deviceId" to JsonPrimitive(UUID.randomUUID().toString())
                         )
-                    )
+                    ),
+                    { packet ->
+                        println("response!")
+                        println(packet.payload)
+                    }
                 )
                 println("opened")
 
@@ -103,11 +115,22 @@ object WebsocketManager {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 super.onMessage(webSocket, text);
                 Log.d("SOCKET", "receive $text");
+                val packet = Json.decodeFromString<Packet>(text);
+                run loop@{
+                    packetCallbacks.forEachIndexed { i, cb ->
+                        if (cb.seq == packet.seq) {
+                            cb.callback(packet)
+                            packetCallbacks.removeAt(i)
+                            return@loop
+                        }
+                    }
+                }
             }
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
                 println(ByteString)
                 notifySubscribers(bytes.utf8())
+                Log.d("SOCKET", "received binary data")
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -124,18 +147,21 @@ object WebsocketManager {
         launch {
             while (true) {
                 delay(25.seconds)
-                SendPacket(OPCode.PING.opcode,
+                SendPacket(
+                    OPCode.PING.opcode,
                     JsonObject(
                         mapOf(
                             "interactive" to JsonPrimitive(true),
                         )
-                    ))
+                    ),
+                    {}
+                )
                 println("ping!")
             }
         }
     }
 
-    fun SendPacket(opcode: Int, payload: JsonElement) {
+    fun SendPacket(opcode: Int, payload: JsonElement, callback: (Packet) -> Unit) {
         val packet = Packet(opcode = opcode, payload = payload)
 
         val json = Json {
@@ -148,6 +174,8 @@ object WebsocketManager {
         println(stringPacket)
 
         webSocket?.send(stringPacket)
+
+        packetCallbacks.add(PacketCallback(Seq, callback))
 
         Seq += 1
     }

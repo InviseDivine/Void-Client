@@ -1,7 +1,7 @@
 package com.sffteam.openmax
 
-import android.os.Bundle
 import android.content.Intent
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,10 +22,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
-import com.sffteam.openmax.WebsocketManager
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import com.sffteam.openmax.CodeActivity
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,16 +36,20 @@ class MainActivity : ComponentActivity() {
         WebsocketManager.Connect()
 
         setContent {
-            val phone = remember{mutableStateOf("")}
+            val phone = remember { mutableStateOf("") }
 
             Column(
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 TextField(
                     value = phone.value,
-                    onValueChange = { newText -> phone.value = newText }, // Lambda to update the state when text changes
+                    onValueChange = { newText ->
+                        phone.value = newText
+                    }, // Lambda to update the state when text changes
                     label = { Text("Введите номер телефона") }, // Optional label for the text field
                     textStyle = TextStyle(fontSize = 25.sp),
                     keyboardOptions = KeyboardOptions(
@@ -55,7 +57,7 @@ class MainActivity : ComponentActivity() {
                         capitalization = KeyboardCapitalization.Sentences
                     )
 
-                    )
+                )
 
                 val context = LocalContext.current
                 Button(
@@ -70,7 +72,19 @@ class MainActivity : ComponentActivity() {
                                     "type" to JsonPrimitive("START_AUTH"),
                                     "language" to JsonPrimitive("ru")
                                 )
-                            )
+                            ),
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    if ("error" in packet.payload) {
+                                        println("ERROR!")
+                                    } else if ("token" in packet.payload) {
+                                        println("token " + packet.payload["token"])
+                                    } else {
+                                        println("wtf")
+                                    }
+                                }
+                            }
                         )
 
                         context.startActivity(intent)
