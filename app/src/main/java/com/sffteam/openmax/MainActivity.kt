@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,7 +88,7 @@ class MainActivity : ComponentActivity() {
                                         errorText.value = packet.payload["localizedMessage"].toString()
                                     } else if ("token" in packet.payload) {
                                         println("token " + packet.payload["token"])
-                                        intent.putExtra("token", packet.payload["token"].content)
+                                        intent.putExtra("token", packet.payload["token"]!!.jsonPrimitive.content)
                                         context.startActivity(intent)
                                     } else {
                                         println("wtf")

@@ -36,6 +36,9 @@ class CodeActivity : ComponentActivity() {
 
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
+
+        println(intent.getStringExtra("token").toString())
+
         setContent {
             val code = remember { mutableStateOf("") }
             val errorText = remember { mutableStateOf("") }
