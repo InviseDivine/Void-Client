@@ -1,5 +1,7 @@
 package com.sffteam.openmax
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,18 +23,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
-import kotlinx.serialization.json.Json
-import com.sffteam.openmax.WebsocketManager
-import kotlinx.serialization.decodeFromString
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.collections.contains
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "token")
 
 class CodeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
 
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
@@ -81,9 +90,17 @@ class CodeActivity : ComponentActivity() {
                                     if ("error" in packet.payload) {
                                         errorText.value = packet.payload["localizedMessage"].toString()
                                     } else if ("tokenAttrs" in packet.payload) {
-                                        println(packet.payload)
-                                        // Now we need TODO chat list....
-                                        // pizdec
+                                        val intent = Intent(context, ChatListActivity::class.java)
+
+                                        lifecycleScope.launch {
+                                            dataStore.edit { settings ->
+                                                settings[stringPreferencesKey("token")] = packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
+                                            }
+                                        }
+
+                                        context.startActivity(intent)
+
+                                        finish()
                                     } else {
                                         println("wtf")
                                     }

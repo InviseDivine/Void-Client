@@ -1,9 +1,6 @@
 package com.sffteam.openmax
 
 import android.util.Log
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -18,7 +15,6 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.time.Duration.Companion.seconds
 
 private const val API_VERSION = 11
 private const val USER_AGENT =
@@ -71,6 +67,7 @@ object WebsocketManager {
 
     private var packetCallbacks = mutableListOf<PacketCallback>()
 
+    private var isConnected: Boolean = false
     fun Connect(onConnected: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
         val request = Request.Builder()
             .url(url)
@@ -94,7 +91,7 @@ object WebsocketManager {
                                     "osVersion" to JsonPrimitive("Linux"),
                                     "deviceName" to JsonPrimitive("Chrome"),
                                     "headerUserAgent" to JsonPrimitive(USER_AGENT),
-                                    "appVersion" to JsonPrimitive("25.10.13"),
+                                    "appVersion" to JsonPrimitive("25.11.1"),
                                     "screen" to JsonPrimitive("1080x1920 1.0x"),
                                     "timezone" to JsonPrimitive("Europe/Moscow"),
                                 )
@@ -108,7 +105,7 @@ object WebsocketManager {
                     }
                 )
                 println("opened")
-
+                isConnected = true
                 onConnected?.invoke()
             }
 
@@ -140,25 +137,30 @@ object WebsocketManager {
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 println("WebSocket closed: $code / $reason")
             }
+
         })
     }
 
-    suspend fun SendPing() = coroutineScope {
-        launch {
-            while (true) {
-                delay(25.seconds)
-                SendPacket(
-                    OPCode.PING.opcode,
-                    JsonObject(
-                        mapOf(
-                            "interactive" to JsonPrimitive(true),
-                        )
-                    ),
-                    {}
-                )
-                println("ping!")
-            }
-        }
+//    suspend fun SendPing() = coroutineScope {
+//        launch {
+//            while (true) {
+//                delay(25.seconds)
+//                SendPacket(
+//                    OPCode.PING.opcode,
+//                    JsonObject(
+//                        mapOf(
+//                            "interactive" to JsonPrimitive(true),
+//                        )
+//                    ),
+//                    {}
+//                )
+//                println("ping!")
+//            }
+//        }
+//    }
+
+    fun IsConnected(): Boolean {
+        return isConnected
     }
 
     fun SendPacket(opcode: Int, payload: JsonElement, callback: (Packet) -> Unit) {

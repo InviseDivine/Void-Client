@@ -1,6 +1,9 @@
 [versions]
 agp = "8.13.0"
 appcompat = "1.7.1"
+coilCompose = "3.3.0"
+datastorePreferencesCoreVersion = "1.1.7"
+guava = "33.5.0-android"
 kotlin = "2.2.21"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -9,13 +12,25 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
 composeBom = "2025.10.01"
-okhttp = "5.2.1"
+okhttp = "5.3.0"
 activity = "1.11.0"
 kotlinxSerializationJson = "1.9.0"
+material = "1.13.0"
+constraintlayout = "2.2.1"
+datastoreCore = "1.1.7"
+datastorePreferencesCore = "1.1.7"
+roomCompiler = "2.8.3"
+compiler = "3.2.0-alpha11"
+datastoreCoreVersion = "1.1.7"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesCoreVersion" }
+androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastorePreferencesCoreVersion" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -32,6 +47,10 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp"}
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-compiler = { group = "androidx.databinding", name = "compiler", version.ref = "compiler" }
+androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCoreVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
