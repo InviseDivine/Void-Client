@@ -22,7 +22,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.lifecycleScope
+import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -38,91 +41,89 @@ class MainActivity : ComponentActivity() {
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
 
-
-        var token = ""
-
         // Must be runBlocking because we need to wait for token check
         runBlocking {
             val exampleData = dataStore.data.first()
-            token = exampleData[stringPreferencesKey("token")].toString()
+            AccountManager.token = exampleData[stringPreferencesKey("token")].toString()
         }
 
-        if (token.isNotEmpty()) {
+        if (AccountManager.token != "null") {
             val intent = Intent(this, ChatListActivity::class.java)
-
-            intent.putExtra("token", token)
 
             this.startActivity(intent)
             finish()
         }
 
         setContent {
-            val phone = remember { mutableStateOf("") }
-            val errorText = remember { mutableStateOf("") }
+            AppTheme() {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(errorText.value,
+                val phone = remember { mutableStateOf("") }
+                val errorText = remember { mutableStateOf("") }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(errorText.value,
                         color = Color.White,
                         fontSize = 25.sp
                     )
 
-                Row(
-                    horizontalArrangement = Arrangement.SpaceAround, // Distributes space horizontally
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = phone.value,
-                        onValueChange = { newText ->
-                            phone.value = newText
-                        }, // Lambda to update the state when text changes
-                        label = { Text("Введите номер телефона") }, // Optional label for the text field
-                        textStyle = TextStyle(fontSize = 25.sp),
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceAround, // Distributes space horizontally
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextField(
+                            value = phone.value,
+                            onValueChange = { newText ->
+                                phone.value = newText
+                            }, // Lambda to update the state when text changes
+                            label = { Text("Введите номер телефона") }, // Optional label for the text field
+                            textStyle = TextStyle(fontSize = 25.sp),
 //                        keyboardOptions = KeyboardOptions(
 //                        keyboardType = KeyboardType.Number,
 //                        capitalization = KeyboardCapitalization.Sentences
 //                    )
-                    )
-                }
-
-                val context = LocalContext.current
-                Button(
-                    onClick = {
-                        WebsocketManager.SendPacket(
-                            OPCode.START_AUTH.opcode,
-                            JsonObject(
-                                mapOf(
-                                    "phone" to JsonPrimitive(phone.value.toString()),
-                                    "type" to JsonPrimitive("START_AUTH"),
-                                    "language" to JsonPrimitive("ru")
-                                )
-                            ),
-                            { packet ->
-                                println(packet.payload)
-                                if (packet.payload is JsonObject) {
-                                    if ("error" in packet.payload) {
-                                        errorText.value = packet.payload["localizedMessage"].toString()
-                                    } else if ("token" in packet.payload) {
-                                        val intent = Intent(context, CodeActivity::class.java)
-
-                                        println("token " + packet.payload["token"])
-
-                                        intent.putExtra("token", packet.payload["token"]!!.jsonPrimitive.content)
-                                        context.startActivity(intent)
-                                    } else {
-                                        println("wtf")
-                                    }
-                                }
-                            }
                         )
                     }
-                ) {
-                    Text("Продолжить", fontSize = 25.sp)
+
+                    val context = LocalContext.current
+                    Button(
+                        onClick = {
+                            WebsocketManager.SendPacket(
+                                OPCode.START_AUTH.opcode,
+                                JsonObject(
+                                    mapOf(
+                                        "phone" to JsonPrimitive(phone.value.toString()),
+                                        "type" to JsonPrimitive("START_AUTH"),
+                                        "language" to JsonPrimitive("ru")
+                                    )
+                                ),
+                                { packet ->
+                                    println(packet.payload)
+                                    if (packet.payload is JsonObject) {
+                                        if ("error" in packet.payload) {
+                                            errorText.value = packet.payload["localizedMessage"].toString()
+                                        } else if ("token" in packet.payload) {
+                                            val intent = Intent(context, CodeActivity::class.java)
+
+                                            println("token " + packet.payload["token"])
+
+                                            intent.putExtra("token", packet.payload["token"]!!.jsonPrimitive.content)
+                                            context.startActivity(intent)
+                                        } else {
+                                            println("wtf")
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    ) {
+                        Text("Продолжить", fontSize = 25.sp)
+                    }
                 }
             }
         }

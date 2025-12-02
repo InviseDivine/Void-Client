@@ -29,6 +29,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
+import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -42,77 +43,78 @@ class CodeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
 
         println(intent.getStringExtra("token").toString())
 
         setContent {
-            val code = remember { mutableStateOf("") }
-            val errorText = remember { mutableStateOf("") }
+            AppTheme() {
+                val code = remember { mutableStateOf("") }
+                val errorText = remember { mutableStateOf("") }
 
-            Column(
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TextField(
-                    value = code.value,
-                    onValueChange = {
-                        newText -> code.value = newText },
-                    label = { Text("Введите код из СМС") },
-                    textStyle = TextStyle(fontSize = 25.sp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
+                Column(
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TextField(
+                        value = code.value,
+                        onValueChange = {
+                                newText -> code.value = newText },
+                        label = { Text("Введите код из СМС") },
+                        textStyle = TextStyle(fontSize = 25.sp),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                        )
                     )
-                )
-                Text(errorText.value,
-                    color = Color.White,
-                    fontSize = 25.sp
-                )
+                    Text(errorText.value,
+                        color = Color.White,
+                        fontSize = 25.sp
+                    )
 
-                val context = LocalContext.current
-                Button(
-                    onClick = {
-                        WebsocketManager.SendPacket(
-                            OPCode.CHECK_CODE.opcode,
-                            JsonObject(
-                                mapOf(
-                                    "token" to JsonPrimitive(intent.getStringExtra("token").toString()),
-                                    "verifyCode" to JsonPrimitive(code.value),
-                                    "authTokenType" to JsonPrimitive("CHECK_CODE")
-                                )
-                            ),
-                            { packet ->
-                                println(packet.payload)
-                                if (packet.payload is JsonObject) {
-                                    if ("error" in packet.payload) {
-                                        errorText.value = packet.payload["localizedMessage"].toString()
-                                    } else if ("tokenAttrs" in packet.payload) {
-                                        val intent = Intent(context, ChatListActivity::class.java)
+                    val context = LocalContext.current
+                    Button(
+                        onClick = {
+                            WebsocketManager.SendPacket(
+                                OPCode.CHECK_CODE.opcode,
+                                JsonObject(
+                                    mapOf(
+                                        "token" to JsonPrimitive(intent.getStringExtra("token").toString()),
+                                        "verifyCode" to JsonPrimitive(code.value),
+                                        "authTokenType" to JsonPrimitive("CHECK_CODE")
+                                    )
+                                ),
+                                { packet ->
+                                    println(packet.payload)
+                                    if (packet.payload is JsonObject) {
+                                        if ("error" in packet.payload) {
+                                            errorText.value = packet.payload["localizedMessage"].toString()
+                                        } else if ("tokenAttrs" in packet.payload) {
+                                            val intent = Intent(context, ChatListActivity::class.java)
 
-                                        lifecycleScope.launch {
-                                            dataStore.edit { settings ->
-                                                settings[stringPreferencesKey("token")] = packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
+                                            lifecycleScope.launch {
+                                                dataStore.edit { settings ->
+                                                    // Nice sandwich lol
+                                                    settings[stringPreferencesKey("token")] = packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
+                                                }
                                             }
+
+                                            context.startActivity(intent)
+
+                                            finish()
+                                        } else {
+                                            println("wtf")
                                         }
-
-                                        context.startActivity(intent)
-
-                                        finish()
-                                    } else {
-                                        println("wtf")
                                     }
                                 }
-                            }
-                        )
+                            )
+                        }
+                    ) {
+                        Text("Войти", fontSize = 25.sp)
                     }
-                ) {
-                    Text("Войти", fontSize = 25.sp)
                 }
             }
-
         }
     }
 }
