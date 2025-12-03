@@ -30,17 +30,27 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
+import org.apache.commons.codec.binary.Hex
+import java.math.BigInteger
+fun String.decodeHex(): ByteArray {
+    require(length % 2 == 0) { "Hex string must have an even length" }
 
+    return chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+}
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        WebsocketManager.Connect()
+//        WebsocketManager.Connect()
 
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
-
+        val hexString = "0a00000700110000003083a570686f6e65ac2b3739393939393939393939a474797065aa53544152545f41555448a86c616e6775616765a27275"
+        println(hexString.decodeHex())
+        println(SocketManager.unpackPacket(hexString.decodeHex()))
         // Must be runBlocking because we need to wait for token check
         runBlocking {
             val exampleData = dataStore.data.first()

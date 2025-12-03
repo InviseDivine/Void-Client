@@ -77,6 +77,8 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation("org.lz4:lz4-java:1.8.0")
+    implementation("com.ensarsarajcic.kotlinx:serialization-msgpack:0.6.0")
     implementation(libs.kotlinx.datetime)
     implementation(libs.textflow.material3)
 }

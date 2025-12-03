@@ -28,46 +28,46 @@ import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.seconds
 
-private const val API_VERSION = 11
+//private const val API_VERSION = 11
 private const val USER_AGENT = "Mozilla/5.0 (Linux; U; Linux x86_64) Gecko/20100101 Firefox/73.6"
 
-private var Seq = 0
+//private var Seq = 0
 
-enum class OPCode(val opcode: Int) {
-    PING(1),
-    START(6), // Using that on open socket
-    START_AUTH(17),
-    CHECK_CODE(18), // Also can be LOGIN packet from server or WRONG_CODE from server
-    PROFILE_INFO(19), // Server returns profile info with that opcode
-    NOTIFICATION_SET(22), // Set notification for chat
-    NEW_STICKER_SETS(26), // Idk, implement it later
-    SYNC_EMOJI(27), // Also syncs ANIMOJI, REACTIONS, STICKERS, FAVORITE_STICKER
-    ANIMOJI(28), // Idk
-    CONTACTS_INFO(32), // Returns info about ids that your sent (if you sent ids that not your contacts, server return you just a empty array)
-    LAST_SEEN(35), // Used for obtain last seen of contacts
-    CHAT_INFO(48),
-    CHAT_MESSAGES(49),
-    SEND_MESSAGE(64),
-    DELETE_MESSAGE(66),
-    CHAT_SUBSCRIBE(75), // Idk
-    HISTORY(79), // Idk
-    SESSIONS(96), // Used for obtain all sessions for account
-    SYNC_FOLDER(272)
-}
+//enum class OPCode(val opcode: Int) {
+//    PING(1),
+//    START(6), // Using that on open socket
+//    START_AUTH(17),
+//    CHECK_CODE(18), // Also can be LOGIN packet from server or WRONG_CODE from server
+//    PROFILE_INFO(19), // Server returns profile info with that opcode
+//    NOTIFICATION_SET(22), // Set notification for chat
+//    NEW_STICKER_SETS(26), // Idk, implement it later
+//    SYNC_EMOJI(27), // Also syncs ANIMOJI, REACTIONS, STICKERS, FAVORITE_STICKER
+//    ANIMOJI(28), // Idk
+//    CONTACTS_INFO(32), // Returns info about ids that your sent (if you sent ids that not your contacts, server return you just a empty array)
+//    LAST_SEEN(35), // Used for obtain last seen of contacts
+//    CHAT_INFO(48),
+//    CHAT_MESSAGES(49),
+//    SEND_MESSAGE(64),
+//    DELETE_MESSAGE(66),
+//    CHAT_SUBSCRIBE(75), // Idk
+//    HISTORY(79), // Idk
+//    SESSIONS(96), // Used for obtain all sessions for account
+//    SYNC_FOLDER(272)
+//}
 
-@Serializable
-data class Packet(
-    @SerialName("ver")
-    val ver: Int = API_VERSION,
-    @SerialName("cmd")
-    val cmd: Int = 0,
-    @SerialName("seq")
-    val seq: Int = Seq,
-    @SerialName("opcode")
-    val opcode: Int,
-    @SerialName("payload")
-    val payload: JsonElement,
-)
+//@Serializable
+//data class Packet(
+//    @SerialName("ver")
+//    val ver: Int = API_VERSION,
+//    @SerialName("cmd")
+//    val cmd: Int = 0,
+//    @SerialName("seq")
+//    val seq: Int = Seq,
+//    @SerialName("opcode")
+//    val opcode: Int,
+//    @SerialName("payload")
+//    val payload: JsonElement,
+//)
 
 data class PacketCallback(val seq: Int, val callback: (Packet) -> Unit)
 
