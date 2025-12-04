@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
 
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
-        val hexString = "0a00000700110000003083a570686f6e65ac2b3739393939393939393939a474797065aa53544152545f41555448a86c616e6775616765a27275"
+        val hexString = "0A03000300120000007E84A56572726F72B17665726966792E636F64652E77726F6E67A76D657373616765B54B65793A206572726F722E77726F6E672E636F6465B06C6F63616C697A65644D657373616765B7D09DD0B5D0B2D0B5D180D0BDD18BD0B920D0BAD0BED0B4A57469746C65B7D09DD0B5D0B2D0B5D180D0BDD18BD0B920D0BAD0BED0B4"
         println(hexString.decodeHex())
         println(SocketManager.unpackPacket(hexString.decodeHex()))
         // Must be runBlocking because we need to wait for token check

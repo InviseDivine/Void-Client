@@ -1,23 +1,17 @@
 package com.sffteam.openmax
 
 import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPack
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import java.io.ByteArrayOutputStream
-import java.net.Socket
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSocket
 import net.jpountz.lz4.LZ4Factory
-import net.jpountz.lz4.LZ4Compressor
 import net.jpountz.lz4.LZ4FastDecompressor
 import org.apache.commons.codec.binary.Hex
-import kotlin.experimental.and
+import java.nio.ByteOrder
+import kotlin.collections.emptyList
 
 val host = "api.oneme.ru"
 val port = 443
@@ -59,6 +53,13 @@ data class Packet(
     val payload: JsonElement,
 )
 
+@Serializable
+data class Payload(
+    @SerialName("payload")
+    @Contextual
+    val payload: Any,
+)
+
 object SocketManager {
 //    val sslContext = SSLContext.getInstance("TLS")
 //    val sslSocketFactory = sslContext.socketFactory
@@ -75,18 +76,31 @@ object SocketManager {
         val decompressor: LZ4FastDecompressor = factory.fastDecompressor()
         println(Hex.encodeHex(data))
         // not working..
-        val apiVer = ByteBuffer.wrap(data.sliceArray(0 .. 1)).short
+        val apiVerSigned: Short = ByteBuffer.wrap(data, 0, 2).order(ByteOrder.LITTLE_ENDIAN).short
+        val apiVer = apiVerSigned.toInt() and 0xFFFF
         println(apiVer)
-        val cmd = ByteBuffer.wrap(data.sliceArray(2 .. 3)).short
-        val seq = ByteBuffer.wrap(data.sliceArray(4 .. 7)).int
-        val opcode = ByteBuffer.wrap(data.sliceArray(8 .. 11)).int
-        val packedLen = ByteBuffer.wrap(data.sliceArray(12 .. 15)).int
+
+        val cmdSigned = ByteBuffer.wrap(data, 1, 2).order(ByteOrder.LITTLE_ENDIAN).short
+        val cmd = cmdSigned.toInt() and 0xFFFF
+
+        println(cmd)
+
+        val seqSigned = ByteBuffer.wrap(data, 2, 2).order(ByteOrder.BIG_ENDIAN).short
+        val seq = seqSigned.toInt() and 0xFFFF
+
+        println(seq)
+
+        val opcodeSigned = ByteBuffer.wrap(data, 4, 2).order(ByteOrder.BIG_ENDIAN).short
+        val opcode = opcodeSigned.toInt() and 0xFFFF
+
+        println(opcode)
+        val packedLen = ByteBuffer.wrap(data.sliceArray(6 .. 10)).int
 
         val compFlag = packedLen shr 24
-        val payloadLength = packedLen and 0xFFFFFF
-
+        var payloadLength = packedLen and 0xFFFFFF
+        payloadLength = payloadLength - 1
         val payloadBytes = data.sliceArray(10 .. 10 + payloadLength)
-        var payload = JsonObject(emptyMap())
+        var payload = Payload(0)
 
         if (compFlag != 0) {
             val compressedData = payloadBytes
@@ -99,12 +113,19 @@ object SocketManager {
             }
 
             payload = MsgPack.decodeFromByteArray(
-                JsonObject.serializer(),
+                Payload.serializer(),
                 decompressedBytes
+            )
+        } else {
+            println(payloadBytes)
+            payload = MsgPack.decodeFromByteArray(
+                Payload.serializer(),
+                payloadBytes
             )
         }
 
-        return Packet(ver = apiVer.toInt(), cmd = cmd, seq = seq, opcode = opcode, payload = payload)
+        print(payload)
+        return Packet(ver = apiVer, cmd = cmd, seq = seq, opcode = opcode, payload = JsonObject(emptyMap()))
     }
 
     fun connect() {
