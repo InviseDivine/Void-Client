@@ -66,7 +66,7 @@ data class PacketCallback(val seq: Int, val callback: (Packet) -> Unit)
 object WebsocketManager {
     private val client = OkHttpClient()
     private var webSocket: WebSocket? = null
-    private const val url = "wss://ws-api.oneme.ru/websocket"
+    private const val URL = "wss://ws-api.oneme.ru/websocket"
 
     private val subscribers = CopyOnWriteArrayList<(String) -> Unit>()
 
@@ -75,7 +75,7 @@ object WebsocketManager {
     private var isConnected: Boolean = false
     fun Connect(onConnected: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
         val request = Request.Builder()
-            .url(url)
+            .url(URL)
             .addHeader("user_agent_header", USER_AGENT)
             .addHeader("Origin", "https://web.max.ru")
             .build()

@@ -1,40 +1,19 @@
 package com.sffteam.openmax
 
-import android.accounts.Account
-import android.content.Intent
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateMap
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.switchMap
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.util.copy
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import kotlin.collections.emptyMap
 
 data class Message(
     val message : String,
@@ -90,7 +69,7 @@ object ChatManager {
         val msgList : MutableMap<String, Message> = mutableMapOf()
 
         for (i in messages) {
-            var message : Message = Message("", 0, 0, JsonArray(emptyList()), "")
+            var message = Message("", 0, 0, JsonArray(emptyList()), "")
             var msg = ""
             var sendtime = 0L
             var senderID = 0L

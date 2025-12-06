@@ -43,13 +43,13 @@ class CodeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val view = this.window.decorView;
+        val view = this.window.decorView
         view.setBackgroundColor(resources.getColor(R.color.black, null))
 
         println(intent.getStringExtra("token").toString())
 
         setContent {
-            AppTheme() {
+            AppTheme {
                 val code = remember { mutableStateOf("") }
                 val errorText = remember { mutableStateOf("") }
 

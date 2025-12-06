@@ -22,26 +22,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.lifecycle.lifecycleScope
 import com.sffteam.openmax.ui.theme.AppTheme
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
-import org.apache.commons.codec.binary.Hex
-import java.math.BigInteger
-fun String.decodeHex(): ByteArray {
-    require(length % 2 == 0) { "Hex string must have an even length" }
 
-    return chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-}
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -49,11 +36,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val view = this.window.decorView;
+        val view = this.window.decorView
         view.setBackgroundColor(resources.getColor(R.color.black, null))
-        // val hexString = "0a03000300120000007e84a56572726f72b17665726966792e636f64652e77726f6e67a76d657373616765b54b65793a206572726f722e77726f6e672e636f6465b06c6f63616c697a65644d657373616765b7d09dd0b5d0b2d0b5d180d0bdd18bd0b920d0bad0bed0b4a57469746c65b7d09dd0b5d0b2d0b5d180d0bdd18bd0b920d0bad0bed0b4"
-//        val jsonobj = "{\"error\":\"verify.code.wrong\",\"message\":\"Key: error.wrong.code\",\"localizedMessage\":\"Неверный код\",\"title\":\"Неверный код\"}"
-//        println(SocketManager.unpackPacket(SocketManager.packPacket(18, Json.decodeFromString(jsonobj))))
+
         // Must be runBlocking because we need to wait for token check
         runBlocking {
             val exampleData = dataStore.data.first()
@@ -68,8 +53,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            AppTheme() {
-
+            AppTheme {
                 val phone = remember { mutableStateOf("") }
                 val errorText = remember { mutableStateOf("") }
 
@@ -96,10 +80,6 @@ class MainActivity : ComponentActivity() {
                             }, // Lambda to update the state when text changes
                             label = { Text("Введите номер телефона") }, // Optional label for the text field
                             textStyle = TextStyle(fontSize = 25.sp),
-//                        keyboardOptions = KeyboardOptions(
-//                        keyboardType = KeyboardType.Number,
-//                        capitalization = KeyboardCapitalization.Sentences
-//                    )
                         )
                     }
 
@@ -110,7 +90,7 @@ class MainActivity : ComponentActivity() {
                                 OPCode.START_AUTH.opcode,
                                 JsonObject(
                                     mapOf(
-                                        "phone" to JsonPrimitive(phone.value.toString()),
+                                        "phone" to JsonPrimitive(phone.value),
                                         "type" to JsonPrimitive("START_AUTH"),
                                         "language" to JsonPrimitive("ru")
                                     )

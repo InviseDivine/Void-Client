@@ -5,13 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,7 +33,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -52,7 +49,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -66,8 +62,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.launch
@@ -83,7 +77,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import java.util.Locale.getDefault
-import kotlin.collections.emptyList
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
@@ -99,8 +92,6 @@ class ChatActivity : ComponentActivity() {
         val chatID : Long = intent.getLongExtra("chatID", 0L)
         val messageTime : Long = intent.getLongExtra("messageTime", 0L)
         val type : String = intent.getStringExtra("chatType").toString()
-
-        var scrolled : Boolean = false
 
         println(ChatManager.chatsList.value[chatID]?.messages?.size)
         if (ChatManager.chatsList.value[chatID]?.messages?.size == 1) {
@@ -162,7 +153,7 @@ class ChatActivity : ComponentActivity() {
                                                 .height(50.dp)
                                                 .clip(CircleShape)
                                                 .background(                brush = Brush.linearGradient( // Create a vertical gradient
-                                                    colors = listOf(Utils.GetColorForAvatar(chatTitle).first, Utils.GetColorForAvatar(chatTitle).second) // Define the colors for the gradient
+                                                    colors = listOf(Utils.getColorForAvatar(chatTitle).first, Utils.getColorForAvatar(chatTitle).second) // Define the colors for the gradient
                                                 )),
 
                                             ) {
@@ -176,31 +167,47 @@ class ChatActivity : ComponentActivity() {
                                     }
                                     Column() {
                                         Text(text = chatTitle)
-                                        var userDesc = ""
+                                        var userDesc: String
 
-                                        if (type == "CHAT") {
-                                            if (chats[chatID]?.users?.size == 1) {
-                                                userDesc = "Тут только вы"
-                                            } else if (chats[chatID]?.users?.size == 2 || chats[chatID]?.users?.size == 3 || chats[chatID]?.users?.size == 4) {
-                                                userDesc = chats[chatID]?.users?.size.toString() + " участника"
-                                            } else {
-                                                userDesc = chats[chatID]?.users?.size.toString() + " участников"
-                                            }
+                                        when (type) {
+                                            "CHAT" -> {
+                                                userDesc = when (chats[chatID]?.users?.size) {
+                                                    1 -> {
+                                                        "Тут только вы"
+                                                    }
 
-                                        } else if (type == "CHANNEL") {
-                                            // Should be changed to getQuantityString, but im lazy rn for it
-                                            if (chats[chatID]?.usersCount == 1) {
-                                                userDesc = chats[chatID]?.usersCount.toString() + " подписчик"
-                                            } else if (chats[chatID]?.usersCount == 2 || chats[chatID]?.usersCount == 3 || chats[chatID]?.usersCount == 4) {
-                                                userDesc = chats[chatID]?.usersCount.toString() + " подписчика"
-                                            } else {
-                                                userDesc = chats[chatID]?.usersCount.toString() + " подписчиков"
+                                                    2, 3, 4 -> {
+                                                        chats[chatID]?.users?.size.toString() + " участника"
+                                                    }
+
+                                                    else -> {
+                                                        chats[chatID]?.users?.size.toString() + " участников"
+                                                    }
+                                                }
+
                                             }
-                                        } else {
-                                            if (chatID == 0L) {
-                                                userDesc = ""
-                                            } else {
-                                                userDesc = "Был(а) недавно"
+                                            "CHANNEL" -> {
+                                                // Should be changed to getQuantityString, but im lazy rn for it
+                                                userDesc = when (chats[chatID]?.usersCount) {
+                                                    1 -> {
+                                                        chats[chatID]?.usersCount.toString() + " подписчик"
+                                                    }
+
+                                                    2, 3, 4 -> {
+                                                        chats[chatID]?.usersCount.toString() + " подписчика"
+                                                    }
+
+                                                    else -> {
+                                                        chats[chatID]?.usersCount.toString() + " подписчиков"
+                                                    }
+                                                }
+                                            }
+                                            else -> {
+                                                userDesc = if (chatID == 0L) {
+                                                    ""
+                                                } else {
+                                                    "Был(а) недавно"
+                                                }
                                             }
                                         }
                                         
@@ -248,9 +255,7 @@ class ChatActivity : ComponentActivity() {
                                 Text(text = "Удалить сообщение")
                             },
                             text = {
-                                Column(
-
-                                    ) {
+                                Column {
                                     Row(verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                                         modifier = Modifier.padding(0.dp)) {
@@ -269,7 +274,6 @@ class ChatActivity : ComponentActivity() {
                             onDismissRequest = {
                                 showPopup = false
                                 removeforall = false
-
                             },
                             confirmButton = {
                                 TextButton(
@@ -393,7 +397,7 @@ fun DrawMessage(message : Message) {
             .background(color = Color.Red)
             .padding(start = 2.dp, end = 2.dp, top = 4.dp)
     ) {
-        Column() {
+        Column {
             if (message.attaches!!.jsonArray.isNotEmpty()) {
                 DrawImages(message.attaches.jsonArray)
             }
@@ -409,10 +413,10 @@ fun DrawMessage(message : Message) {
         val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
         var minutezero: String = "0"
 
-        if (localDateTime.minute < 10) {
-            minutezero = "0" + localDateTime.minute.toString()
+        minutezero = if (localDateTime.minute < 10) {
+            "0" + localDateTime.minute.toString()
         } else {
-            minutezero = localDateTime.minute.toString()
+            localDateTime.minute.toString()
         }
 
         val time = "${localDateTime.hour}:${minutezero}"
@@ -525,7 +529,7 @@ fun DrawBottomChannel(chatID : Long) {
 @Composable
 fun DrawImages(messages : JsonArray) {
     if (messages.size % 2 == 0) {
-        Column() {
+        Column {
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 modifier = Modifier.heightIn(max = 1000.dp),
@@ -576,7 +580,7 @@ fun DrawImages(messages : JsonArray) {
             )
         }
     } else {
-        Column() {
+        Column {
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 modifier = Modifier.heightIn(max = 1000.dp),

@@ -7,15 +7,11 @@ import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.network.tls.tls
-import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.readAvailable
-import io.ktor.utils.io.readByteArray
-import io.ktor.utils.io.readRemaining
 import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
-import kotlinx.io.readByteArray
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -28,9 +24,9 @@ import org.apache.commons.codec.binary.Hex
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-val host = "api.oneme.ru"
-val port = 443
-val API_VERSION = 10 // lol
+const val host = "api.oneme.ru"
+const val port = 443
+const val API_VERSION = 10 // lol
 var Seq = 1
 
 enum class OPCode(val opcode: Int) {
@@ -135,12 +131,12 @@ object SocketManager {
         var payload: JsonObject
 
         if (compFlag != 0) {
-            val compressedData = payloadBytes
             val decompressedBytes = ByteArray(99999)
 
             try {
-                decompressor.decompress(compressedData, 0, decompressedBytes, 0, decompressedBytes.size)
+                decompressor.decompress(payloadBytes, 0, decompressedBytes, 0, decompressedBytes.size)
             } catch (e : Exception) {
+                println(e)
             }
 
             payload = Json.decodeFromString(MoshiPack.msgpackToJson(decompressedBytes))

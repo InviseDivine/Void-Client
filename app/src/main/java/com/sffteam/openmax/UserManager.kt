@@ -8,8 +8,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import kotlin.collections.contains
-import kotlin.collections.plus
 
 data class User(
     val avatarUrl : String,

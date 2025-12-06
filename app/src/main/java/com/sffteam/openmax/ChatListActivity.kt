@@ -11,13 +11,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,7 +62,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
-import eu.wewox.textflow.material3.TextFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -74,7 +69,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.Locale.getDefault
-import kotlin.math.absoluteValue
 
 class ChatListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,7 +80,7 @@ class ChatListActivity : ComponentActivity() {
             }
         }
         setContent  @OptIn(ExperimentalMaterial3Api::class) {
-            AppTheme() {
+            AppTheme {
                 DrawChatList()
             }
         }
@@ -95,7 +89,7 @@ class ChatListActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawChatList() {
-    Column() {
+    Column {
         CenterAlignedTopAppBar(title= {
                 Text("Open MAX", fontSize = 22.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
             },
@@ -128,8 +122,8 @@ fun DrawChatList() {
 
 @Composable
 fun DrawUser(chatID : Long, chat : Chat, context : Context) {
-    var chatTitle = ""
-    var chatIcon = ""
+    var chatTitle: String
+    var chatIcon: String
     val users = UserManager.usersList.collectAsState()
 
     if (chat.type == "DIALOG" && chatID != 0L) {
@@ -189,7 +183,7 @@ fun DrawUser(chatID : Long, chat : Chat, context : Context) {
                         .clip(CircleShape)
                 )
             } else {
-                val initial = chat.title.split(" ").mapNotNull { it.firstOrNull()?.toChar() }
+                val initial = chat.title.split(" ").mapNotNull { it.firstOrNull() }
                     .take(2)
                     .joinToString("")
                     .uppercase(getDefault())
@@ -200,7 +194,7 @@ fun DrawUser(chatID : Long, chat : Chat, context : Context) {
                         .height(60.dp)
                         .clip(CircleShape)
                         .background(                brush = Brush.linearGradient( // Create a vertical gradient
-                            colors = listOf(Utils.GetColorForAvatar(chat.title).first, Utils.GetColorForAvatar(chat.title).second) // Define the colors for the gradient
+                            colors = listOf(Utils.getColorForAvatar(chat.title).first, Utils.getColorForAvatar(chat.title).second) // Define the colors for the gradient
                         )),
 
                     ) {
