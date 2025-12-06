@@ -1,22 +1,38 @@
 package com.sffteam.openmax
 
-import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPack
-import kotlinx.serialization.Contextual
+import com.daveanthonythomas.moshipack.MoshiPack
+import io.ktor.network.selector.SelectorManager
+import io.ktor.network.sockets.Socket
+import io.ktor.network.sockets.aSocket
+import io.ktor.network.sockets.openReadChannel
+import io.ktor.network.sockets.openWriteChannel
+import io.ktor.network.tls.tls
+import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.readByteArray
+import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
+import kotlinx.io.readByteArray
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import java.nio.ByteBuffer
+import kotlinx.serialization.json.JsonPrimitive
 import net.jpountz.lz4.LZ4Factory
 import net.jpountz.lz4.LZ4FastDecompressor
 import org.apache.commons.codec.binary.Hex
+import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.collections.emptyList
 
 val host = "api.oneme.ru"
 val port = 443
 val API_VERSION = 10 // lol
-var Seq = 0
+var Seq = 1
+
 enum class OPCode(val opcode: Int) {
     PING(1),
     START(6), // Using that on open socket
@@ -52,22 +68,40 @@ data class Packet(
     @SerialName("payload")
     val payload: JsonElement,
 )
+fun Short.toByteArrayBigEndian(): ByteArray {
+    return ByteBuffer.allocate(Short.SIZE_BYTES)
+        .putShort(this)
+        .array() //
+}
 
-@Serializable
-data class Payload(
-    @SerialName("payload")
-    @Contextual
-    val payload: Any,
-)
-
+fun Int.toByteArrayBigEndian(): ByteArray {
+    return byteArrayOf(
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+}
 object SocketManager {
-//    val sslContext = SSLContext.getInstance("TLS")
-//    val sslSocketFactory = sslContext.socketFactory
-//
-//    var socket = Socket()
+    val selectorManager = SelectorManager(Dispatchers.IO)
+    lateinit var socket : Socket
+    fun packPacket(opcode: Int, payload: JsonElement): ByteArray {
+        // Thanks to https://github.com/ink-developer/PyMax/blob/main/src/pymax/mixins/socket.py#L75 again :D
+        val apiVer = API_VERSION.toByte()
+        val cmd = 0.toByte()
+        val seq = Seq.toShort().toByteArrayBigEndian()
+        val opcode = opcode.toShort().toByteArrayBigEndian()
+        val payload = MoshiPack().jsonToMsgpack(payload.toString()).readByteArray()
+        val payloadLen = payload.size and 0xFFFFFF
 
-    fun packPacket() {
-
+        return byteArrayOf(
+            apiVer,
+            cmd,
+            *seq,
+            *opcode,
+            *payloadLen.toByteArrayBigEndian(),
+            *payload
+        )
     }
 
     fun unpackPacket(data : ByteArray): Packet {
@@ -75,13 +109,11 @@ object SocketManager {
         val factory = LZ4Factory.fastestInstance()
         val decompressor: LZ4FastDecompressor = factory.fastDecompressor()
         println(Hex.encodeHex(data))
-        // not working..
-        val apiVerSigned: Short = ByteBuffer.wrap(data, 0, 2).order(ByteOrder.LITTLE_ENDIAN).short
-        val apiVer = apiVerSigned.toInt() and 0xFFFF
+
+        val apiVer = data[0].toInt() and 0xFF
         println(apiVer)
 
-        val cmdSigned = ByteBuffer.wrap(data, 1, 2).order(ByteOrder.LITTLE_ENDIAN).short
-        val cmd = cmdSigned.toInt() and 0xFFFF
+        val cmd = data[1].toInt() and 0xFF
 
         println(cmd)
 
@@ -98,9 +130,9 @@ object SocketManager {
 
         val compFlag = packedLen shr 24
         var payloadLength = packedLen and 0xFFFFFF
-        payloadLength = payloadLength - 1
+        payloadLength -= 1
         val payloadBytes = data.sliceArray(10 .. 10 + payloadLength)
-        var payload = Payload(0)
+        var payload: JsonObject
 
         if (compFlag != 0) {
             val compressedData = payloadBytes
@@ -109,42 +141,75 @@ object SocketManager {
             try {
                 decompressor.decompress(compressedData, 0, decompressedBytes, 0, decompressedBytes.size)
             } catch (e : Exception) {
-                println(e)
             }
 
-            payload = MsgPack.decodeFromByteArray(
-                Payload.serializer(),
-                decompressedBytes
-            )
+            payload = Json.decodeFromString(MoshiPack.msgpackToJson(decompressedBytes))
         } else {
             println(payloadBytes)
-            payload = MsgPack.decodeFromByteArray(
-                Payload.serializer(),
-                payloadBytes
-            )
+            payload =  Json.decodeFromString(MoshiPack.msgpackToJson(payloadBytes))
         }
 
-        print(payload)
-        return Packet(ver = apiVer, cmd = cmd, seq = seq, opcode = opcode, payload = JsonObject(emptyMap()))
+        println(payload)
+        return Packet(ver = apiVer, cmd = cmd, seq = seq, opcode = opcode, payload = JsonObject(payload))
     }
 
-    fun connect() {
-//        socket = sslSocketFactory.createSocket(host, port) as SSLSocket
+    suspend fun connect() {
+        println("trying to connect")
+        socket = aSocket(selectorManager)
+            .tcp()
+            .connect(host, port)
+            .tls(coroutineContext = currentCoroutineContext())
 
+        sendPacket(packPacket(6, JsonObject(
+            mapOf(
+                "clientSessionId" to JsonPrimitive(192L),
+                "userAgent" to JsonObject(
+                    mapOf(
+                        "deviceType" to JsonPrimitive("ANDROID"),
+                        "appVersion" to JsonPrimitive("25.12.1"),
+                        "osVersion" to JsonPrimitive("Android 14"),
+                        "timezone" to JsonPrimitive("Europe/Kaliningrad"),
+                        "screen" to JsonPrimitive("382dpi 382dpi 1080x2243"),
+                        "pushDeviceType" to JsonPrimitive("GCM"),
+                        "locale" to JsonPrimitive("ru"),
+                        "buildNumber" to JsonPrimitive(6420),
+                        "deviceName" to JsonPrimitive("oneplus CPH2465"),
+                        "deviceLocale" to JsonPrimitive("ru"),
+                        )
+                ),
+                "deviceId" to JsonPrimitive("018a9d9a35d8de67")
+            )
+        )))
         getPackets()
     }
 
-    fun getPackets() {
-        while (true) {
-//            val input = socket.getInputStream()
-//            val buffer = ByteArray(4096)
-//            val bytesRead = input.read(buffer)
-//
-//            if (bytesRead != -1) {
-//                val receivedData = buffer.copyOfRange(0, bytesRead)
-//
-//
-//            }
+    suspend fun sendPacket(packet : ByteArray) {
+        val sendChannel = socket.openWriteChannel(autoFlush = true)
+
+        println()
+        println(unpackPacket(packet))
+        println("trying to send")
+        sendChannel.writeFully(packet)
+        sendChannel.flush()
+        println("sent")
+    }
+    suspend fun getPackets() {
+            println("trying to get")
+            val receiveChannel = socket.openReadChannel()
+            try {
+                while (socket.isActive) {
+                    println("trying 2get")
+                    val buffer = ByteArray(8192)
+                    val bytesRead = receiveChannel.readAvailable(buffer)
+
+                    if (bytesRead > 0) {
+                        val data = buffer.copyOf(bytesRead)
+                        println(data)
+                        println(unpackPacket(data))
+                    }
+                }
+            } catch (e: Exception) {
+                println("Reading error: ${e.message}")
+            }
         }
     }
-}

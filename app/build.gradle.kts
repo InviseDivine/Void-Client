@@ -77,8 +77,10 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation("com.daveanthonythomas.moshipack:moshipack:1.0.1")
     implementation("org.lz4:lz4-java:1.8.0")
-    implementation("com.ensarsarajcic.kotlinx:serialization-msgpack:0.6.0")
     implementation(libs.kotlinx.datetime)
     implementation(libs.textflow.material3)
+    implementation("io.ktor:ktor-network:3.3.3")
+    implementation("io.ktor:ktor-network-tls:3.3.3")
 }

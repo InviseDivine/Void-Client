@@ -24,9 +24,12 @@ import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
 import com.sffteam.openmax.ui.theme.AppTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
@@ -41,16 +44,16 @@ fun String.decodeHex(): ByteArray {
 }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-//        WebsocketManager.Connect()
+
 
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val view = this.window.decorView;
         view.setBackgroundColor(resources.getColor(R.color.black, null))
-        val hexString = "0A03000300120000007E84A56572726F72B17665726966792E636F64652E77726F6E67A76D657373616765B54B65793A206572726F722E77726F6E672E636F6465B06C6F63616C697A65644D657373616765B7D09DD0B5D0B2D0B5D180D0BDD18BD0B920D0BAD0BED0B4A57469746C65B7D09DD0B5D0B2D0B5D180D0BDD18BD0B920D0BAD0BED0B4"
-        println(hexString.decodeHex())
-        println(SocketManager.unpackPacket(hexString.decodeHex()))
+        // val hexString = "0a03000300120000007e84a56572726f72b17665726966792e636f64652e77726f6e67a76d657373616765b54b65793a206572726f722e77726f6e672e636f6465b06c6f63616c697a65644d657373616765b7d09dd0b5d0b2d0b5d180d0bdd18bd0b920d0bad0bed0b4a57469746c65b7d09dd0b5d0b2d0b5d180d0bdd18bd0b920d0bad0bed0b4"
+//        val jsonobj = "{\"error\":\"verify.code.wrong\",\"message\":\"Key: error.wrong.code\",\"localizedMessage\":\"Неверный код\",\"title\":\"Неверный код\"}"
+//        println(SocketManager.unpackPacket(SocketManager.packPacket(18, Json.decodeFromString(jsonobj))))
         // Must be runBlocking because we need to wait for token check
         runBlocking {
             val exampleData = dataStore.data.first()

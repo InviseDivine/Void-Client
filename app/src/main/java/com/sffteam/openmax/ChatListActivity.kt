@@ -67,7 +67,9 @@ import androidx.lifecycle.lifecycleScope
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
 import eu.wewox.textflow.material3.TextFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -78,11 +80,11 @@ class ChatListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         lifecycleScope.launch {
-            WebsocketManager.sendPing()
+            withContext(Dispatchers.IO) {
+                SocketManager.connect()
+            }
         }
-
         setContent  @OptIn(ExperimentalMaterial3Api::class) {
             AppTheme() {
                 DrawChatList()
