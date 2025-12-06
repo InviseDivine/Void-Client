@@ -22,19 +22,31 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sffteam.openmax.ui.theme.AppTheme
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 
 class MainActivity : ComponentActivity() {
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-
-
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        GlobalScope.launch {
+            withContext(Dispatchers.IO) {
+                SocketManager.connect()
+            }
+        }
 
         val view = this.window.decorView
         view.setBackgroundColor(resources.getColor(R.color.black, null))
@@ -86,33 +98,38 @@ class MainActivity : ComponentActivity() {
                     val context = LocalContext.current
                     Button(
                         onClick = {
-                            WebsocketManager.SendPacket(
-                                OPCode.START_AUTH.opcode,
+                            val packet = SocketManager.packPacket(OPCode.START_AUTH.opcode,
                                 JsonObject(
                                     mapOf(
                                         "phone" to JsonPrimitive(phone.value),
                                         "type" to JsonPrimitive("START_AUTH"),
                                         "language" to JsonPrimitive("ru")
                                     )
-                                ),
-                                { packet ->
-                                    println(packet.payload)
-                                    if (packet.payload is JsonObject) {
-                                        if ("error" in packet.payload) {
-                                            errorText.value = packet.payload["localizedMessage"].toString()
-                                        } else if ("token" in packet.payload) {
-                                            val intent = Intent(context, CodeActivity::class.java)
+                                )
+                            )
 
-                                            println("token " + packet.payload["token"])
+                            GlobalScope.launch {
+                                SocketManager.sendPacket(
+                                    packet,
+                                    { packet ->
+                                        println(packet.payload)
+                                        if (packet.payload is JsonObject) {
+                                            if ("error" in packet.payload) {
+                                                errorText.value = packet.payload["localizedMessage"].toString()
+                                            } else if ("token" in packet.payload) {
+                                                val intent = Intent(context, CodeActivity::class.java)
 
-                                            intent.putExtra("token", packet.payload["token"]!!.jsonPrimitive.content)
-                                            context.startActivity(intent)
-                                        } else {
-                                            println("wtf")
+                                                println("token " + packet.payload["token"])
+
+                                                intent.putExtra("token", packet.payload["token"]!!.jsonPrimitive.content)
+                                                context.startActivity(intent)
+                                            } else {
+                                                println("wtf")
+                                            }
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     ) {
                         Text("Продолжить", fontSize = 25.sp)

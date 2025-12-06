@@ -60,9 +60,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonArray
@@ -71,14 +74,12 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.util.Locale.getDefault
 
 class ChatListActivity : ComponentActivity() {
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                SocketManager.connect()
-            }
-        }
+
+
         setContent  @OptIn(ExperimentalMaterial3Api::class) {
             AppTheme {
                 DrawChatList()

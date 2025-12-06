@@ -426,7 +426,7 @@ fun DrawMessage(message : Message) {
         ) {
             if (message.status == "EDITED") {
                 Icon(Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
-                    .size(18.dp)
+                    .size(16.dp)
                     .align(
                         Alignment.Bottom
                     ).alpha(0.8f)
