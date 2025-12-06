@@ -524,18 +524,19 @@ fun DrawBottomDialog(chatID: Long) {
     var message by remember { mutableStateOf("") }
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(15.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         IconButton(onClick = {
         }) {
             Icon(Icons.Filled.Add, contentDescription = "add")
         }
         OutlinedTextField(
+            modifier = Modifier.weight(1f),
             value = message,
             onValueChange = { newText ->
                 message = newText
             },
-            placeholder = { Text("Сообщение") },
+            placeholder = { Text("Сообщение")},
         )
 
         IconButton(onClick = {
