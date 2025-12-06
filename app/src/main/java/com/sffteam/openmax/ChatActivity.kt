@@ -87,11 +87,11 @@ class ChatActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val chatTitle : String = intent.getStringExtra("chatTitle").toString()
-        val chatUrl : String = intent.getStringExtra("chatIcon").toString()
-        val chatID : Long = intent.getLongExtra("chatID", 0L)
-        val messageTime : Long = intent.getLongExtra("messageTime", 0L)
-        val type : String = intent.getStringExtra("chatType").toString()
+        val chatTitle: String = intent.getStringExtra("chatTitle").toString()
+        val chatUrl: String = intent.getStringExtra("chatIcon").toString()
+        val chatID: Long = intent.getLongExtra("chatID", 0L)
+        val messageTime: Long = intent.getLongExtra("messageTime", 0L)
+        val type: String = intent.getStringExtra("chatType").toString()
 
         println(ChatManager.chatsList.value[chatID]?.messages?.size)
         if (ChatManager.chatsList.value[chatID]?.messages?.size == 1) {
@@ -142,7 +142,8 @@ class ChatActivity : ComponentActivity() {
                                                 .clip(CircleShape)
                                         )
                                     } else {
-                                        val initial = chatTitle.split(" ").mapNotNull { it.firstOrNull()?.toChar() }
+                                        val initial = chatTitle.split(" ")
+                                            .mapNotNull { it.firstOrNull()?.toChar() }
                                             .take(2)
                                             .joinToString("")
                                             .uppercase(getDefault())
@@ -152,9 +153,16 @@ class ChatActivity : ComponentActivity() {
                                                 .width(50.dp)
                                                 .height(50.dp)
                                                 .clip(CircleShape)
-                                                .background(                brush = Brush.linearGradient( // Create a vertical gradient
-                                                    colors = listOf(Utils.getColorForAvatar(chatTitle).first, Utils.getColorForAvatar(chatTitle).second) // Define the colors for the gradient
-                                                )),
+                                                .background(
+                                                    brush = Brush.linearGradient( // Create a vertical gradient
+                                                        colors = listOf(
+                                                            Utils.getColorForAvatar(
+                                                                chatTitle
+                                                            ).first,
+                                                            Utils.getColorForAvatar(chatTitle).second
+                                                        ) // Define the colors for the gradient
+                                                    )
+                                                ),
 
                                             ) {
                                             Text(
@@ -186,6 +194,7 @@ class ChatActivity : ComponentActivity() {
                                                 }
 
                                             }
+
                                             "CHANNEL" -> {
                                                 // Should be changed to getQuantityString, but im lazy rn for it
                                                 userDesc = when (chats[chatID]?.usersCount) {
@@ -202,6 +211,7 @@ class ChatActivity : ComponentActivity() {
                                                     }
                                                 }
                                             }
+
                                             else -> {
                                                 userDesc = if (chatID == 0L) {
                                                     ""
@@ -210,8 +220,12 @@ class ChatActivity : ComponentActivity() {
                                                 }
                                             }
                                         }
-                                        
-                                        Text(text = userDesc, fontSize = 16.sp, modifier = Modifier.alpha(0.85f))
+
+                                        Text(
+                                            text = userDesc,
+                                            fontSize = 16.sp,
+                                            modifier = Modifier.alpha(0.85f)
+                                        )
                                     }
                                 }
                             },
@@ -256,18 +270,29 @@ class ChatActivity : ComponentActivity() {
                             },
                             text = {
                                 Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically,
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        modifier = Modifier.padding(0.dp)) {
+                                        modifier = Modifier.padding(0.dp)
+                                    ) {
                                         Checkbox(
                                             checked = removeforall,
-                                            onCheckedChange = { isChecked -> removeforall = isChecked },
+                                            onCheckedChange = { isChecked ->
+                                                removeforall = isChecked
+                                            },
                                             modifier = Modifier.padding(0.dp),
                                         )
-                                        Text(text = "Удалить у всех", fontSize = 20.sp, modifier = Modifier.padding(0.dp)
+                                        Text(
+                                            text = "Удалить у всех",
+                                            fontSize = 20.sp,
+                                            modifier = Modifier.padding(0.dp)
                                         )
                                     }
-                                    Text(text = "Вы точно хотите удалить сообщение?", fontSize = 20.sp, modifier = Modifier.padding(start = 10.dp))
+                                    Text(
+                                        text = "Вы точно хотите удалить сообщение?",
+                                        fontSize = 20.sp,
+                                        modifier = Modifier.padding(start = 10.dp)
+                                    )
 
                                 }
                             },
@@ -283,21 +308,32 @@ class ChatActivity : ComponentActivity() {
                                             JsonObject(
                                                 mapOf(
                                                     "chatId" to JsonPrimitive(chatID),
-                                                    "messageIds" to JsonArray(listOf(Json.encodeToJsonElement(String.serializer(), selectedMSGID))),
+                                                    "messageIds" to JsonArray(
+                                                        listOf(
+                                                            Json.encodeToJsonElement(
+                                                                String.serializer(),
+                                                                selectedMSGID
+                                                            )
+                                                        )
+                                                    ),
                                                     "forMe" to JsonPrimitive(!removeforall)
                                                 )
                                             ),
                                             { packet ->
                                                 if (packet.payload is JsonObject) {
                                                     println(packet)
-                                                    val packetID = packet.payload["chatId"]?.jsonPrimitive?.long
+                                                    val packetID =
+                                                        packet.payload["chatId"]?.jsonPrimitive?.long
 
 
                                                     for (i in chats[packetID]?.messages!!) {
                                                         if (i.key == selectedMSGID) {
                                                             println(i.key)
                                                             println(selectedMSGID)
-                                                            ChatManager.removeMessage(chatID, selectedMSGID)
+                                                            ChatManager.removeMessage(
+                                                                chatID,
+                                                                selectedMSGID
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -331,40 +367,61 @@ class ChatActivity : ComponentActivity() {
                             },
                             sheetState = sheetState
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(16.dp),
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
                                 modifier = Modifier.padding(start = 8.dp)
-                                ) {
+                            ) {
                                 Row(modifier = Modifier.fillMaxWidth()) {
-                                    Icon(Icons.Filled.Edit, contentDescription = "edit message", modifier = Modifier
-                                        .padding(end = 10.dp)
-                                        .size(20.dp)
-                                        .align(Alignment.CenterVertically)
+                                    Icon(
+                                        Icons.Filled.Edit,
+                                        contentDescription = "edit message",
+                                        modifier = Modifier
+                                            .padding(end = 10.dp)
+                                            .size(20.dp)
+                                            .align(Alignment.CenterVertically)
                                     )
 
-                                    Text(text = "Редактировать", fontSize = 25.sp, modifier = Modifier
-                                        .align(Alignment.CenterVertically))
+                                    Text(
+                                        text = "Редактировать",
+                                        fontSize = 25.sp,
+                                        modifier = Modifier
+                                            .align(Alignment.CenterVertically)
+                                    )
                                 }
-                                Row(modifier = Modifier.clickable {
-                                    showPopup = true
-                                }
+                                Row(modifier = Modifier
+                                    .clickable {
+                                        showPopup = true
+                                    }
                                     .fillMaxWidth()) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "delete message", modifier = Modifier
-                                        .padding(end = 10.dp)
-                                        .size(20.dp)
-                                        .align(Alignment.CenterVertically),
+                                    Icon(
+                                        Icons.Filled.Delete,
+                                        contentDescription = "delete message",
+                                        modifier = Modifier
+                                            .padding(end = 10.dp)
+                                            .size(20.dp)
+                                            .align(Alignment.CenterVertically),
                                         tint = Color.Red
                                     )
 
-                                    Text(text = "Удалить", fontSize = 25.sp, color = Color.Red, modifier = Modifier
-                                        .align(Alignment.CenterVertically))
+                                    Text(
+                                        text = "Удалить",
+                                        fontSize = 25.sp,
+                                        color = Color.Red,
+                                        modifier = Modifier
+                                            .align(Alignment.CenterVertically)
+                                    )
                                 }
                             }
                         }
                     }
 
-                    LazyColumn(modifier = Modifier
-                        .padding(it)
-                        .fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp), state = listState) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(it)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        state = listState
+                    ) {
                         items(chats[chatID]?.messages?.toList() ?: emptyList()) { message ->
                             Row(
                                 modifier = Modifier
@@ -373,8 +430,10 @@ class ChatActivity : ComponentActivity() {
                                         showBottomSheet = true
                                         selectedMSGID = message.first
                                     },
-                                horizontalArrangement = Arrangement.spacedBy(16.dp,
-                                    if (message.second.senderID == AccountManager.accountID) Alignment.End else Alignment.Start),
+                                horizontalArrangement = Arrangement.spacedBy(
+                                    16.dp,
+                                    if (message.second.senderID == AccountManager.accountID) Alignment.End else Alignment.Start
+                                ),
                             ) {
                                 DrawMessage(message.second)
                             }
@@ -389,7 +448,7 @@ class ChatActivity : ComponentActivity() {
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun DrawMessage(message : Message) {
+fun DrawMessage(message: Message) {
     Box(
         modifier = Modifier
             .widthIn(max = 300.dp, min = 100.dp)
@@ -422,14 +481,18 @@ fun DrawMessage(message : Message) {
         val time = "${localDateTime.hour}:${minutezero}"
 
         Row(
-            modifier = Modifier.padding(top = 20.dp, end = 4.dp).align(Alignment.BottomEnd)
+            modifier = Modifier
+                .padding(top = 20.dp, end = 4.dp)
+                .align(Alignment.BottomEnd)
         ) {
             if (message.status == "EDITED") {
-                Icon(Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
-                    .size(16.dp)
-                    .align(
-                        Alignment.Bottom
-                    ).alpha(0.8f)
+                Icon(
+                    Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
+                        .size(16.dp)
+                        .align(
+                            Alignment.Bottom
+                        )
+                        .alpha(0.8f)
                 )
             }
 
@@ -438,13 +501,15 @@ fun DrawMessage(message : Message) {
                 modifier = Modifier
                     .align(
                         Alignment.Bottom
-                    ).alpha(0.8f),
+                    )
+                    .alpha(0.8f),
             )
         }
     }
 }
+
 @Composable
-fun DrawBottomDialog(chatID : Long) {
+fun DrawBottomDialog(chatID: Long) {
     var message by remember { mutableStateOf("") }
 
     Row(
@@ -457,7 +522,8 @@ fun DrawBottomDialog(chatID : Long) {
         OutlinedTextField(
             value = message,
             onValueChange = { newText ->
-                message = newText },
+                message = newText
+            },
             placeholder = { Text("Сообщение") },
         )
 
@@ -469,12 +535,14 @@ fun DrawBottomDialog(chatID : Long) {
                     JsonObject(
                         mapOf(
                             "chatId" to JsonPrimitive(chatID),
-                            "message" to JsonObject(mapOf(
-                                "text" to JsonPrimitive(message),
-                                "cid" to JsonPrimitive(System.currentTimeMillis()),
-                                "elements" to JsonArray(emptyList()),
-                                "attaches" to JsonArray(emptyList())
-                            )),
+                            "message" to JsonObject(
+                                mapOf(
+                                    "text" to JsonPrimitive(message),
+                                    "cid" to JsonPrimitive(System.currentTimeMillis()),
+                                    "elements" to JsonArray(emptyList()),
+                                    "attaches" to JsonArray(emptyList())
+                                )
+                            ),
                             "notify" to JsonPrimitive(true)
                         )
                     ),
@@ -485,25 +553,26 @@ fun DrawBottomDialog(chatID : Long) {
                             println("msg should be added")
                             var msgID = ""
                             var msg = Message("", 0L, 0L, JsonArray(emptyList()), "")
+                            try {
+                                var status = ""
                                 try {
-                                    var status = ""
-                                    try {
-                                        status = ""
-                                    } catch (e : Exception) {
+                                    status = ""
+                                } catch (e: Exception) {
 
-                                    }
-                                    msg = Message(
-                                        packet.payload["message"]?.jsonObject["text"]!!.jsonPrimitive.content,
-                                        packet.payload["message"]?.jsonObject["time"]!!.jsonPrimitive.long,
-                                        packet.payload["message"]?.jsonObject["sender"]!!.jsonPrimitive.long,
-                                        packet.payload["message"]?.jsonObject["attaches"]!!.jsonArray,
-                                        status,
-                                    )
-
-                                    msgID = packet.payload["message"]?.jsonObject["id"]!!.jsonPrimitive.content
-                                } catch (e : Exception) {
-                                    println(e)
                                 }
+                                msg = Message(
+                                    packet.payload["message"]?.jsonObject["text"]!!.jsonPrimitive.content,
+                                    packet.payload["message"]?.jsonObject["time"]!!.jsonPrimitive.long,
+                                    packet.payload["message"]?.jsonObject["sender"]!!.jsonPrimitive.long,
+                                    packet.payload["message"]?.jsonObject["attaches"]!!.jsonArray,
+                                    status,
+                                )
+
+                                msgID =
+                                    packet.payload["message"]?.jsonObject["id"]!!.jsonPrimitive.content
+                            } catch (e: Exception) {
+                                println(e)
+                            }
 
                             println(msg)
                             ChatManager.addMessage(msgID, msg, chatID)
@@ -520,14 +589,14 @@ fun DrawBottomDialog(chatID : Long) {
 }
 
 @Composable
-fun DrawBottomChannel(chatID : Long) {
+fun DrawBottomChannel(chatID: Long) {
     TextButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
         Text("Отключить уведомления", fontSize = 25.sp)
     }
 }
 
 @Composable
-fun DrawImages(messages : JsonArray) {
+fun DrawImages(messages: JsonArray) {
     if (messages.size % 2 == 0) {
         Column {
             LazyVerticalStaggeredGrid(
@@ -570,12 +639,14 @@ fun DrawImages(messages : JsonArray) {
             AsyncImage(
                 model = messages.last().jsonObject["baseUrl"]!!.jsonPrimitive.content,
                 contentDescription = "ChatIcon",
-                modifier = Modifier.fillMaxWidth() .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                    )
-                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                        )
+                    ),
                 contentScale = ContentScale.Crop
             )
         }

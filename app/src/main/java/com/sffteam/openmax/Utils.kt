@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.absoluteValue
 
 object Utils {
-    fun getColorForAvatar(avatar : String): Pair<Color, Color> {
+    fun getColorForAvatar(avatar: String): Pair<Color, Color> {
         val colors = listOf(
             Pair(Color(0xFFFF0026), Color(0xFFFF00BB)),
             Pair(Color(0xFFFFC004), Color(0xFFFFE59F)),

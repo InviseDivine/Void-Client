@@ -59,21 +59,23 @@ class CodeActivity : ComponentActivity() {
                 val errorText = remember { mutableStateOf("") }
 
                 Column(
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     TextField(
                         value = code.value,
-                        onValueChange = {
-                                newText -> code.value = newText },
+                        onValueChange = { newText -> code.value = newText },
                         label = { Text("Введите код из СМС") },
                         textStyle = TextStyle(fontSize = 25.sp),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                         )
                     )
-                    Text(errorText.value,
+                    Text(
+                        errorText.value,
                         color = Color.White,
                         fontSize = 25.sp
                     )
@@ -81,10 +83,13 @@ class CodeActivity : ComponentActivity() {
                     val context = LocalContext.current
                     Button(
                         onClick = {
-                            val packet = SocketManager.packPacket(OPCode.CHECK_CODE.opcode,
+                            val packet = SocketManager.packPacket(
+                                OPCode.CHECK_CODE.opcode,
                                 JsonObject(
                                     mapOf(
-                                        "token" to JsonPrimitive(intent.getStringExtra("token").toString()),
+                                        "token" to JsonPrimitive(
+                                            intent.getStringExtra("token").toString()
+                                        ),
                                         "verifyCode" to JsonPrimitive(code.value),
                                         "authTokenType" to JsonPrimitive("CHECK_CODE")
                                     )
@@ -98,15 +103,19 @@ class CodeActivity : ComponentActivity() {
                                         println(packet.payload)
                                         if (packet.payload is JsonObject) {
                                             if ("error" in packet.payload) {
-                                                errorText.value = packet.payload["localizedMessage"].toString()
+                                                errorText.value =
+                                                    packet.payload["localizedMessage"].toString()
                                             } else if ("tokenAttrs" in packet.payload) {
-                                                val intent = Intent(context, ChatListActivity::class.java)
+                                                val intent =
+                                                    Intent(context, ChatListActivity::class.java)
 
                                                 lifecycleScope.launch {
                                                     dataStore.edit { settings ->
                                                         // Nice sandwich lol
-                                                        val token = packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
-                                                        settings[stringPreferencesKey("token")] = token
+                                                        val token =
+                                                            packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
+                                                        settings[stringPreferencesKey("token")] =
+                                                            token
                                                         AccountManager.token = token
                                                     }
                                                 }

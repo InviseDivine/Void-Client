@@ -169,6 +169,7 @@ object WebsocketManager {
 
         })
     }
+
     fun loginToAccount() {
         SendPacket(
             OPCode.PROFILE_INFO.opcode,
@@ -186,8 +187,9 @@ object WebsocketManager {
             { packet ->
                 println("processin1g")
                 try {
-                    AccountManager.accountID = packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["id"]!!.jsonPrimitive.long
-                } catch (e : Exception) {
+                    AccountManager.accountID =
+                        packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["id"]!!.jsonPrimitive.long
+                } catch (e: Exception) {
                     println(e)
                 }
                 try {
@@ -205,6 +207,7 @@ object WebsocketManager {
             }
         )
     }
+
     suspend fun sendPing() {
         while (true) {
             delay(25.seconds)

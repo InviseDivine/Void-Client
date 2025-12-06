@@ -76,7 +76,8 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(errorText.value,
+                    Text(
+                        errorText.value,
                         color = Color.White,
                         fontSize = 25.sp
                     )
@@ -98,7 +99,8 @@ class MainActivity : ComponentActivity() {
                     val context = LocalContext.current
                     Button(
                         onClick = {
-                            val packet = SocketManager.packPacket(OPCode.START_AUTH.opcode,
+                            val packet = SocketManager.packPacket(
+                                OPCode.START_AUTH.opcode,
                                 JsonObject(
                                     mapOf(
                                         "phone" to JsonPrimitive(phone.value),
@@ -115,13 +117,18 @@ class MainActivity : ComponentActivity() {
                                         println(packet.payload)
                                         if (packet.payload is JsonObject) {
                                             if ("error" in packet.payload) {
-                                                errorText.value = packet.payload["localizedMessage"].toString()
+                                                errorText.value =
+                                                    packet.payload["localizedMessage"].toString()
                                             } else if ("token" in packet.payload) {
-                                                val intent = Intent(context, CodeActivity::class.java)
+                                                val intent =
+                                                    Intent(context, CodeActivity::class.java)
 
                                                 println("token " + packet.payload["token"])
 
-                                                intent.putExtra("token", packet.payload["token"]!!.jsonPrimitive.content)
+                                                intent.putExtra(
+                                                    "token",
+                                                    packet.payload["token"]!!.jsonPrimitive.content
+                                                )
                                                 context.startActivity(intent)
                                             } else {
                                                 println("wtf")

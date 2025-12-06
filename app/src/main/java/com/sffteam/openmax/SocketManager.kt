@@ -22,6 +22,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import net.jpountz.lz4.LZ4DecompressorWithLength
 import net.jpountz.lz4.LZ4Factory
 import net.jpountz.lz4.LZ4FastDecompressor
 import org.apache.commons.codec.binary.Hex
@@ -69,6 +70,7 @@ data class Packet(
     @SerialName("payload")
     val payload: JsonElement,
 )
+
 fun Short.toByteArrayBigEndian(): ByteArray {
     return ByteBuffer.allocate(Short.SIZE_BYTES)
         .putShort(this)
@@ -83,9 +85,10 @@ fun Int.toByteArrayBigEndian(): ByteArray {
         this.toByte()
     )
 }
+
 object SocketManager {
     private val selectorManager = SelectorManager(Dispatchers.IO)
-    private lateinit var socket : Socket
+    private lateinit var socket: Socket
 
     private val subscribers = CopyOnWriteArrayList<(String) -> Unit>()
 
@@ -109,7 +112,7 @@ object SocketManager {
         )
     }
 
-    fun unpackPacket(data : ByteArray): Packet {
+    fun unpackPacket(data: ByteArray): Packet {
         // Thanks to https://github.com/ink-developer/PyMax/blob/main/src/pymax/mixins/socket.py#L42
         val factory = LZ4Factory.fastestInstance()
         val decompressor: LZ4FastDecompressor = factory.fastDecompressor()
@@ -131,7 +134,8 @@ object SocketManager {
         val opcode = opcodeSigned.toInt() and 0xFFFF
 
         println(opcode)
-        val packedLen = ByteBuffer.wrap(data, 6, 4).order(ByteOrder.BIG_ENDIAN).int.toLong() and 0xFFFFFFFFL
+        val packedLen =
+            ByteBuffer.wrap(data, 6, 4).order(ByteOrder.BIG_ENDIAN).int.toLong() and 0xFFFFFFFFL
 
         val compFlag = (packedLen shr 24).toInt()
         val payloadLength = (packedLen and 0xFFFFFF).toInt()
@@ -140,32 +144,37 @@ object SocketManager {
         println("test3")
 
         val payloadBytes = data.sliceArray(10 until (10 + payloadLength))
-        var payload : JsonObject = JsonObject(emptyMap())
+        var payload: JsonObject = JsonObject(emptyMap())
         if (compFlag != 0) {
-            val decompressedBytes = ByteArray(99999)
+            var decompressedBytes = ByteArray(131072)
             println("test1")
             try {
-                decompressor.decompress(payloadBytes, 0, decompressedBytes, 0, decompressedBytes.size)
-            } catch (e : Exception) {
-                println(e)
+                decompressor.decompress(payloadBytes, decompressedBytes)
+            } catch (e: Exception) {
+                println("decomp err ${e}")
             }
 
             println("test2")
 
-
             try {
                 payload = Json.decodeFromString(MoshiPack.msgpackToJson(decompressedBytes))
-            } catch (e : Exception) {
+            } catch (e: Exception) {
                 println(e)
             }
         } else {
             println(payloadBytes)
-            payload =  Json.decodeFromString(MoshiPack.msgpackToJson(payloadBytes))
+            payload = Json.decodeFromString(MoshiPack.msgpackToJson(payloadBytes))
         }
 
-        println(payload)
+        println("payload! ${payload}")
 
-        return Packet(ver = apiVer, cmd = cmd, seq = seq, opcode = opcode, payload = JsonObject(payload))
+        return Packet(
+            ver = apiVer,
+            cmd = cmd,
+            seq = seq,
+            opcode = opcode,
+            payload = JsonObject(payload)
+        )
     }
 
     suspend fun connect() {
@@ -175,27 +184,29 @@ object SocketManager {
             .connect(host, port)
             .tls(coroutineContext = currentCoroutineContext())
 
-        sendPacket(packPacket(6, JsonObject(
-            mapOf(
-                    "clientSessionId" to JsonPrimitive(192L),
-                    "userAgent" to JsonObject(
-                        mapOf(
-                            "deviceType" to JsonPrimitive("ANDROID"),
-                            "appVersion" to JsonPrimitive("25.12.1"),
-                            "osVersion" to JsonPrimitive("Android 14"),
-                            "timezone" to JsonPrimitive("Europe/Kaliningrad"),
-                            "screen" to JsonPrimitive("382dpi 382dpi 1080x2243"),
-                            "pushDeviceType" to JsonPrimitive("GCM"),
-                            "locale" to JsonPrimitive("ru"),
-                            "buildNumber" to JsonPrimitive(6420),
-                            "deviceName" to JsonPrimitive("oneplus CPH2465"),
-                            "deviceLocale" to JsonPrimitive("ru"),
+        sendPacket(
+            packPacket(
+                6, JsonObject(
+                    mapOf(
+                        "clientSessionId" to JsonPrimitive(192L),
+                        "userAgent" to JsonObject(
+                            mapOf(
+                                "deviceType" to JsonPrimitive("ANDROID"),
+                                "appVersion" to JsonPrimitive("25.12.1"),
+                                "osVersion" to JsonPrimitive("Android 14"),
+                                "timezone" to JsonPrimitive("Europe/Kaliningrad"),
+                                "screen" to JsonPrimitive("382dpi 382dpi 1080x2243"),
+                                "pushDeviceType" to JsonPrimitive("GCM"),
+                                "locale" to JsonPrimitive("ru"),
+                                "buildNumber" to JsonPrimitive(6420),
+                                "deviceName" to JsonPrimitive("oneplus CPH2465"),
+                                "deviceLocale" to JsonPrimitive("ru"),
                             )
-                    ),
-                    "deviceId" to JsonPrimitive("018a9d9a35d8de67")
+                        ),
+                        "deviceId" to JsonPrimitive("018a9d9a35d8de67")
+                    )
                 )
-            )
-        ),
+            ),
             { packet ->
                 println("response")
                 println(packet.payload)
@@ -225,13 +236,15 @@ object SocketManager {
             )
         )
 
-        sendPacket(packet,
+        sendPacket(
+            packet,
             { packet ->
                 println("processin1g")
                 println(packet)
                 try {
-                    AccountManager.accountID = packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["id"]!!.jsonPrimitive.long
-                } catch (e : Exception) {
+                    AccountManager.accountID =
+                        packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["id"]!!.jsonPrimitive.long
+                } catch (e: Exception) {
                     println(e)
                 }
                 try {
@@ -249,7 +262,8 @@ object SocketManager {
             }
         )
     }
-    suspend fun sendPacket(packet : ByteArray, callback: (Packet) -> Unit) {
+
+    suspend fun sendPacket(packet: ByteArray, callback: (Packet) -> Unit) {
         val sendChannel = socket.openWriteChannel(autoFlush = true)
 
         println(unpackPacket(packet))
@@ -260,21 +274,32 @@ object SocketManager {
 
         Seq += 1
     }
+
     suspend fun getPackets() {
         println("trying to get")
         val receiveChannel = socket.openReadChannel()
         try {
+            var entirePacket = ByteArray(131072)
+            var pos = 0
             while (socket.isActive) {
                 println("trying 2get")
-                val buffer = ByteArray(99999)
-                val bytesRead = receiveChannel.readAvailable(buffer, 0, 99999)
 
+                val buffer = ByteArray(8192)
+                val bytesRead = receiveChannel.readAvailable(buffer, 0, 8192)
                 println(bytesRead)
                 println(buffer.size)
+
                 if (bytesRead > 0) {
-                    val data = buffer.copyOf(bytesRead)
-                    println(data.size)
-                    val packet = unpackPacket(data)
+                    if (bytesRead == 8192) { // tmp solution
+                        entirePacket = buffer.copyInto(entirePacket, pos)
+                        pos += 8192
+                        continue
+                    }
+                    entirePacket = buffer.copyInto(entirePacket, pos, 0, bytesRead)
+                    pos += bytesRead
+                    println("Total packet length: ${pos}")
+                    val packet = unpackPacket(entirePacket.sliceArray(0..<pos))
+                    pos = 0
 
                     run loop@{
                         SocketManager.packetCallbacks.forEachIndexed { i, cb ->
