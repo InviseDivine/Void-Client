@@ -64,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -82,7 +84,7 @@ import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 class ChatActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -95,7 +97,7 @@ class ChatActivity : ComponentActivity() {
 
         println(ChatManager.chatsList.value[chatID]?.messages?.size)
         if (ChatManager.chatsList.value[chatID]?.messages?.size == 1) {
-            WebsocketManager.SendPacket(
+            val packet = SocketManager.packPacket(
                 OPCode.CHAT_MESSAGES.opcode,
                 JsonObject(
                     mapOf(
@@ -105,13 +107,18 @@ class ChatActivity : ComponentActivity() {
                         "backward" to JsonPrimitive(30),
                         "getMessages" to JsonPrimitive(true)
                     )
-                ),
-                { packet ->
-                    println(packet)
-                    if (packet.payload is JsonObject)
-                        ChatManager.processMessages(packet.payload["messages"]!!.jsonArray, chatID)
-                }
+                )
             )
+            GlobalScope.launch {
+                SocketManager.sendPacket(
+                    packet,
+                    { packet ->
+                        println(packet)
+                        if (packet.payload is JsonObject)
+                            ChatManager.processMessages(packet.payload["messages"]!!.jsonArray, chatID)
+                    }
+                )
+            }
         }
 
         setContent {
@@ -303,7 +310,7 @@ class ChatActivity : ComponentActivity() {
                             confirmButton = {
                                 TextButton(
                                     onClick = {
-                                        WebsocketManager.SendPacket(
+                                        val packet = SocketManager.packPacket(
                                             OPCode.DELETE_MESSAGE.opcode,
                                             JsonObject(
                                                 mapOf(
@@ -318,27 +325,31 @@ class ChatActivity : ComponentActivity() {
                                                     ),
                                                     "forMe" to JsonPrimitive(!removeforall)
                                                 )
-                                            ),
-                                            { packet ->
-                                                if (packet.payload is JsonObject) {
-                                                    println(packet)
-                                                    val packetID =
-                                                        packet.payload["chatId"]?.jsonPrimitive?.long
+                                            )
+                                        )
+                                        GlobalScope.launch {
+                                            SocketManager.sendPacket(packet,
+                                                { packet ->
+                                                    if (packet.payload is JsonObject) {
+                                                        println(packet)
+                                                        val packetID =
+                                                            packet.payload["chatId"]?.jsonPrimitive?.long
 
 
-                                                    for (i in chats[packetID]?.messages!!) {
-                                                        if (i.key == selectedMSGID) {
-                                                            println(i.key)
-                                                            println(selectedMSGID)
-                                                            ChatManager.removeMessage(
-                                                                chatID,
-                                                                selectedMSGID
-                                                            )
+                                                        for (i in chats[packetID]?.messages!!) {
+                                                            if (i.key == selectedMSGID) {
+                                                                println(i.key)
+                                                                println(selectedMSGID)
+                                                                ChatManager.removeMessage(
+                                                                    chatID,
+                                                                    selectedMSGID
+                                                                )
+                                                            }
                                                         }
                                                     }
                                                 }
-                                            }
-                                        )
+                                            )
+                                        }
 
                                         showBottomSheet = false
                                         showPopup = false
@@ -530,8 +541,7 @@ fun DrawBottomDialog(chatID: Long) {
         IconButton(onClick = {
             println(message)
             if (message.isNotEmpty()) {
-                WebsocketManager.SendPacket(
-                    OPCode.SEND_MESSAGE.opcode,
+                val packet = SocketManager.packPacket(OPCode.SEND_MESSAGE.opcode,
                     JsonObject(
                         mapOf(
                             "chatId" to JsonPrimitive(chatID),
@@ -545,40 +555,43 @@ fun DrawBottomDialog(chatID: Long) {
                             ),
                             "notify" to JsonPrimitive(true)
                         )
-                    ),
-                    { packet ->
-                        println(packet.payload)
-                        println("msg should be added")
-                        if (packet.payload is JsonObject) {
+                    ))
+                GlobalScope.launch {
+                    SocketManager.sendPacket(packet,
+                        { packet ->
+                            println(packet.payload)
                             println("msg should be added")
-                            var msgID = ""
-                            var msg = Message("", 0L, 0L, JsonArray(emptyList()), "")
-                            try {
-                                var status = ""
+                            if (packet.payload is JsonObject) {
+                                println("msg should be added")
+                                var msgID = ""
+                                var msg = Message("", 0L, 0L, JsonArray(emptyList()), "")
                                 try {
-                                    status = ""
+                                    var status = ""
+                                    try {
+                                        status = ""
+                                    } catch (e: Exception) {
+
+                                    }
+                                    msg = Message(
+                                        packet.payload["message"]?.jsonObject["text"]!!.jsonPrimitive.content,
+                                        packet.payload["message"]?.jsonObject["time"]!!.jsonPrimitive.long,
+                                        packet.payload["message"]?.jsonObject["sender"]!!.jsonPrimitive.long,
+                                        packet.payload["message"]?.jsonObject["attaches"]!!.jsonArray,
+                                        status,
+                                    )
+
+                                    msgID =
+                                        packet.payload["message"]?.jsonObject["id"]!!.jsonPrimitive.content
                                 } catch (e: Exception) {
-
+                                    println(e)
                                 }
-                                msg = Message(
-                                    packet.payload["message"]?.jsonObject["text"]!!.jsonPrimitive.content,
-                                    packet.payload["message"]?.jsonObject["time"]!!.jsonPrimitive.long,
-                                    packet.payload["message"]?.jsonObject["sender"]!!.jsonPrimitive.long,
-                                    packet.payload["message"]?.jsonObject["attaches"]!!.jsonArray,
-                                    status,
-                                )
 
-                                msgID =
-                                    packet.payload["message"]?.jsonObject["id"]!!.jsonPrimitive.content
-                            } catch (e: Exception) {
-                                println(e)
+                                println(msg)
+                                ChatManager.addMessage(msgID, msg, chatID)
                             }
-
-                            println(msg)
-                            ChatManager.addMessage(msgID, msg, chatID)
                         }
-                    }
-                )
+                    )
+                }
             }
 
             message = ""

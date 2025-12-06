@@ -140,7 +140,7 @@ object ChatManager {
     }
 
     /* Function. */
-    fun processChats(chats: JsonArray): Boolean {
+    suspend fun processChats(chats: JsonArray): Boolean {
         for (i in chats) {
             var chatID: Long = 0
 
@@ -303,14 +303,15 @@ object ChatManager {
                 )
             }
         }
-
-        WebsocketManager.SendPacket(
-            OPCode.CONTACTS_INFO.opcode,
+        val packet = SocketManager.packPacket(OPCode.CONTACTS_INFO.opcode,
             JsonObject(
                 mapOf(
                     "contactIds" to JsonArray(userIds),
                 )
-            ),
+            )
+        )
+        SocketManager.sendPacket(
+            packet,
             { packet ->
                 println(packet.payload)
                 if (packet.payload is JsonObject) {
@@ -318,6 +319,20 @@ object ChatManager {
                 }
             }
         )
+//        WebsocketManager.SendPacket(
+//            OPCode.CONTACTS_INFO.opcode,
+//            JsonObject(
+//                mapOf(
+//                    "contactIds" to JsonArray(userIds),
+//                )
+//            ),
+//            { packet ->
+//                println(packet.payload)
+//                if (packet.payload is JsonObject) {
+//                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+//                }
+//            }
+//        )
 
         return true
     }

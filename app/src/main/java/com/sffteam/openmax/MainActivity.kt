@@ -22,8 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +44,7 @@ class MainActivity : ComponentActivity() {
             withContext(Dispatchers.IO) {
                 SocketManager.connect()
             }
+            SocketManager.sendPing()
         }
 
         val view = this.window.decorView

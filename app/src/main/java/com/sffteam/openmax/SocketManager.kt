@@ -1,6 +1,13 @@
 package com.sffteam.openmax
 
+import com.daveanthonythomas.moshipack.Format
 import com.daveanthonythomas.moshipack.MoshiPack
+import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPack
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.sffteam.openmax.WebsocketManager.SendPacket
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.KotlinJsonAdapterFactory
+import com.squareup.moshi.Moshi
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Socket
 import io.ktor.network.sockets.aSocket
@@ -11,7 +18,10 @@ import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -26,9 +36,12 @@ import net.jpountz.lz4.LZ4DecompressorWithLength
 import net.jpountz.lz4.LZ4Factory
 import net.jpountz.lz4.LZ4FastDecompressor
 import org.apache.commons.codec.binary.Hex
+import org.msgpack.jackson.dataformat.MessagePackFactory
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.coroutines.coroutineContext
+import kotlin.time.Duration.Companion.seconds
 
 const val host = "api.oneme.ru"
 const val port = 443
@@ -68,6 +81,7 @@ data class Packet(
     @SerialName("opcode")
     val opcode: Int,
     @SerialName("payload")
+    @Contextual
     val payload: JsonElement,
 )
 
@@ -85,7 +99,13 @@ fun Int.toByteArrayBigEndian(): ByteArray {
         this.toByte()
     )
 }
+fun messagePackToJson(bytes: ByteArray): String {
+    val msgpackMapper = ObjectMapper(MessagePackFactory())
+    val jsonMapper = ObjectMapper()
 
+    val node = msgpackMapper.readTree(bytes)
+    return jsonMapper.writeValueAsString(node)
+}
 object SocketManager {
     private val selectorManager = SelectorManager(Dispatchers.IO)
     private lateinit var socket: Socket
@@ -144,7 +164,8 @@ object SocketManager {
         println("test3")
 
         val payloadBytes = data.sliceArray(10 until (10 + payloadLength))
-        var payload: JsonObject = JsonObject(emptyMap())
+        var payload: String = ""
+
         if (compFlag != 0) {
             var decompressedBytes = ByteArray(131072)
             println("test1")
@@ -157,23 +178,23 @@ object SocketManager {
             println("test2")
 
             try {
-                payload = Json.decodeFromString(MoshiPack.msgpackToJson(decompressedBytes))
+                payload = messagePackToJson(decompressedBytes)
             } catch (e: Exception) {
                 println(e)
             }
         } else {
             println(payloadBytes)
-            payload = Json.decodeFromString(MoshiPack.msgpackToJson(payloadBytes))
+            payload = messagePackToJson(payloadBytes)
         }
 
         println("payload! ${payload}")
 
         return Packet(
-            ver = apiVer,
-            cmd = cmd,
-            seq = seq,
-            opcode = opcode,
-            payload = JsonObject(payload)
+            apiVer,
+            cmd,
+            seq,
+            opcode,
+            Json.decodeFromString(payload)
         )
     }
 
@@ -255,8 +276,10 @@ object SocketManager {
                 }
                 println()
 
-                while (!ChatManager.processChats(packet.payload.jsonObject["chats"]!!.jsonArray)) {
-                    println("test1")
+                // mne pohui, rabotaet - ne trogai :trollface:
+                // ok if you know how to fix it - do it
+                runBlocking {
+                    ChatManager.processChats(packet.payload.jsonObject["chats"]!!.jsonArray)
                 }
                 println("processi2ng")
             }
@@ -317,6 +340,23 @@ object SocketManager {
             }
         } catch (e: Exception) {
             println("Reading error: ${e.message}")
+        }
+    }
+
+    suspend fun sendPing() {
+        val packet = packPacket(
+            OPCode.PING.opcode,
+            JsonObject(
+                mapOf(
+                    "interactive" to JsonPrimitive(true),
+                )
+            )
+        )
+
+        while (true) {
+            delay(25.seconds)
+            sendPacket(packet, {})
+            println("ping!")
         }
     }
 }

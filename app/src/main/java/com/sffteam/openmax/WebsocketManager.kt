@@ -200,9 +200,9 @@ object WebsocketManager {
                 }
                 println()
 
-                while (!ChatManager.processChats(packet.payload.jsonObject["chats"]!!.jsonArray)) {
-                    println("test1")
-                }
+//                while (!ChatManager.processChats(packet.payload.jsonObject["chats"]!!.jsonArray)) {
+//                    println("test1")
+//                }
                 println("processi2ng")
             }
         )

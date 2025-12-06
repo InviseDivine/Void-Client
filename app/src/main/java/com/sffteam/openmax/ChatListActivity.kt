@@ -142,9 +142,9 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
     var chatTitle: String
     var chatIcon: String
     val users = UserManager.usersList.collectAsState()
+    var secondUser = 0L
 
     if (chat.type == "DIALOG" && chatID != 0L) {
-        var secondUser = 0L
 
         for (i in chat.users.toList()) {
             if (i.first != AccountManager.accountID) {
@@ -200,10 +200,17 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
                         .clip(CircleShape)
                 )
             } else {
-                val initial = chat.title.split(" ").mapNotNull { it.firstOrNull() }
-                    .take(2)
-                    .joinToString("")
-                    .uppercase(getDefault())
+                val initial = if (chat.title.isNotEmpty()) {
+                    chat.title.split(" ").mapNotNull { it.firstOrNull() }
+                        .take(2)
+                        .joinToString("")
+                        .uppercase(getDefault())
+                } else {
+                   (users.value[secondUser]?.firstName + users.value[secondUser]?.firstName).split(" ").mapNotNull { it.firstOrNull() }
+                        .take(2)
+                        .joinToString("")
+                        .uppercase(getDefault())
+                }
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier

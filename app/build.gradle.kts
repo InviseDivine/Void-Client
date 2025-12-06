@@ -83,4 +83,7 @@ dependencies {
     implementation(libs.textflow.material3)
     implementation("io.ktor:ktor-network:3.3.3")
     implementation("io.ktor:ktor-network-tls:3.3.3")
+    implementation("com.ensarsarajcic.kotlinx:serialization-msgpack:0.6.0")
+    implementation("org.msgpack:jackson-dataformat-msgpack:0.9.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
 }
