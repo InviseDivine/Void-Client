@@ -17,6 +17,8 @@ import io.ktor.network.tls.tls
 import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -165,40 +167,45 @@ object SocketManager {
 
         val payloadBytes = data.sliceArray(10 until (10 + payloadLength))
         var payload: String = ""
+        if (payloadBytes.isNotEmpty()) {
+            if (compFlag != 0) {
+                var decompressedBytes = ByteArray(131072)
+                println("test1")
+                try {
+                    decompressor.decompress(payloadBytes, decompressedBytes)
+                } catch (e: Exception) {
+                    println("decomp err ${e}")
+                }
 
-        if (compFlag != 0) {
-            var decompressedBytes = ByteArray(131072)
-            println("test1")
-            try {
-                decompressor.decompress(payloadBytes, decompressedBytes)
-            } catch (e: Exception) {
-                println("decomp err ${e}")
+                println("test2")
+
+                try {
+                    payload = messagePackToJson(decompressedBytes)
+                } catch (e: Exception) {
+                    println(e)
+                }
+            } else {
+                println(payloadBytes)
+                payload = messagePackToJson(payloadBytes)
             }
-
-            println("test2")
-
-            try {
-                payload = messagePackToJson(decompressedBytes)
-            } catch (e: Exception) {
-                println(e)
-            }
-        } else {
-            println(payloadBytes)
-            payload = messagePackToJson(payloadBytes)
         }
 
         println("payload! ${payload}")
+        var jsonPayload = JsonObject(emptyMap())
 
+        if (payload.isNotEmpty()) {
+            jsonPayload = Json.decodeFromString(payload)
+        }
         return Packet(
             apiVer,
             cmd,
             seq,
             opcode,
-            Json.decodeFromString(payload)
+            jsonPayload
         )
     }
 
-    suspend fun connect() {
+    suspend fun connect() = coroutineScope {
         println("trying to connect")
         socket = aSocket(selectorManager)
             .tcp()
@@ -236,6 +243,9 @@ object SocketManager {
 
         if (AccountManager.token != "null") {
             loginToAccount()
+        }
+        async {
+            sendPing()
         }
 
         getPackets()
@@ -340,6 +350,7 @@ object SocketManager {
             }
         } catch (e: Exception) {
             println("Reading error: ${e.message}")
+
         }
     }
 
@@ -348,13 +359,13 @@ object SocketManager {
             OPCode.PING.opcode,
             JsonObject(
                 mapOf(
-                    "interactive" to JsonPrimitive(true),
+                    "interactive" to JsonPrimitive(false),
                 )
             )
         )
 
         while (true) {
-            delay(25.seconds)
+            delay(20.seconds)
             sendPacket(packet, {})
             println("ping!")
         }

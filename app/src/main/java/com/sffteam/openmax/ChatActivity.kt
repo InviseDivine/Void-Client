@@ -259,7 +259,7 @@ class ChatActivity : ComponentActivity() {
 
                     var removeforall by remember { mutableStateOf(false) }
 
-                    var selectedMSGID by remember { mutableStateOf("") }
+                    var selectedMSGID by remember { mutableStateOf(0L) }
                     var showPopup by remember { mutableStateOf(false) }
 
                     LaunchedEffect(chats) {
@@ -313,17 +313,17 @@ class ChatActivity : ComponentActivity() {
                                         val packet = SocketManager.packPacket(
                                             OPCode.DELETE_MESSAGE.opcode,
                                             JsonObject(
-                                                mapOf(
+                                                mapOf(  "forMe" to JsonPrimitive(!removeforall),
+                                                    "itemType" to JsonPrimitive("REGULAR"),
                                                     "chatId" to JsonPrimitive(chatID),
                                                     "messageIds" to JsonArray(
                                                         listOf(
                                                             Json.encodeToJsonElement(
-                                                                String.serializer(),
+                                                                Long.serializer(),
                                                                 selectedMSGID
                                                             )
                                                         )
                                                     ),
-                                                    "forMe" to JsonPrimitive(!removeforall)
                                                 )
                                             )
                                         )
@@ -332,17 +332,15 @@ class ChatActivity : ComponentActivity() {
                                                 { packet ->
                                                     if (packet.payload is JsonObject) {
                                                         println(packet)
-                                                        val packetID =
-                                                            packet.payload["chatId"]?.jsonPrimitive?.long
-
+                                                        val packetID = packet.payload["chatId"]?.jsonPrimitive?.long
 
                                                         for (i in chats[packetID]?.messages!!) {
-                                                            if (i.key == selectedMSGID) {
+                                                            if (i.key.toLong() == selectedMSGID) {
                                                                 println(i.key)
                                                                 println(selectedMSGID)
                                                                 ChatManager.removeMessage(
                                                                     chatID,
-                                                                    selectedMSGID
+                                                                    selectedMSGID.toString()
                                                                 )
                                                             }
                                                         }
@@ -439,7 +437,7 @@ class ChatActivity : ComponentActivity() {
                                     .fillMaxWidth()
                                     .clickable {
                                         showBottomSheet = true
-                                        selectedMSGID = message.first
+                                        selectedMSGID = message.first.toLong()
                                     },
                                 horizontalArrangement = Arrangement.spacedBy(
                                     16.dp,

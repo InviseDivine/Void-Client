@@ -43,8 +43,8 @@ class MainActivity : ComponentActivity() {
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
                 SocketManager.connect()
+
             }
-            SocketManager.sendPing()
         }
 
         val view = this.window.decorView
