@@ -33,6 +33,7 @@ import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -109,7 +110,7 @@ class CodeActivity : ComponentActivity() {
                                                 val intent =
                                                     Intent(context, ChatListActivity::class.java)
 
-                                                lifecycleScope.launch {
+                                                runBlocking {
                                                     dataStore.edit { settings ->
                                                         // Nice sandwich lol
                                                         val token =
@@ -118,6 +119,11 @@ class CodeActivity : ComponentActivity() {
                                                             token
                                                         AccountManager.token = token
                                                     }
+
+                                                }
+
+                                                GlobalScope.launch {
+                                                    SocketManager.loginToAccount()
                                                 }
 
                                                 context.startActivity(intent)

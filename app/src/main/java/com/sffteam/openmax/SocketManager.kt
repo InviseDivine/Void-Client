@@ -1,5 +1,9 @@
 package com.sffteam.openmax
 
+import android.content.Context
+import android.icu.util.TimeZone
+import android.os.Build
+import android.provider.Settings
 import com.daveanthonythomas.moshipack.Format
 import com.daveanthonythomas.moshipack.MoshiPack
 import com.ensarsarajcic.kotlinx.serialization.msgpack.MsgPack
@@ -27,7 +31,9 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
@@ -41,6 +47,7 @@ import org.apache.commons.codec.binary.Hex
 import org.msgpack.jackson.dataformat.MessagePackFactory
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.seconds
@@ -205,7 +212,7 @@ object SocketManager {
         )
     }
 
-    suspend fun connect() = coroutineScope {
+    suspend fun connect(context: Context) = coroutineScope {
         println("trying to connect")
         socket = aSocket(selectorManager)
             .tcp()
@@ -221,17 +228,17 @@ object SocketManager {
                             mapOf(
                                 "deviceType" to JsonPrimitive("ANDROID"),
                                 "appVersion" to JsonPrimitive("25.12.1"),
-                                "osVersion" to JsonPrimitive("Android 14"),
-                                "timezone" to JsonPrimitive("Europe/Kaliningrad"),
+                                "osVersion" to JsonPrimitive("Android ${Build.VERSION.RELEASE}"),
+                                "timezone" to JsonPrimitive(TimeZone.getDefault().id),
                                 "screen" to JsonPrimitive("382dpi 382dpi 1080x2243"),
                                 "pushDeviceType" to JsonPrimitive("GCM"),
                                 "locale" to JsonPrimitive("ru"),
                                 "buildNumber" to JsonPrimitive(6420),
-                                "deviceName" to JsonPrimitive("oneplus CPH2465"),
-                                "deviceLocale" to JsonPrimitive("ru"),
+                                "deviceName" to JsonPrimitive(Build.MANUFACTURER + " " + Build.MODEL),
+                                "deviceLocale" to JsonPrimitive(Locale.getDefault().language.toString()),
                             )
                         ),
-                        "deviceId" to JsonPrimitive("018a9d9a35d8de67")
+                        "deviceId" to JsonPrimitive(Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID))
                     )
                 )
             ),
@@ -243,6 +250,7 @@ object SocketManager {
 
         if (AccountManager.token != "null") {
             loginToAccount()
+            AccountManager.logined = true
         }
         async {
             sendPing()
@@ -251,7 +259,7 @@ object SocketManager {
         getPackets()
     }
 
-    suspend fun loginToAccount() {
+    suspend fun loginToAccount() = coroutineScope {
         val packet = packPacket(
             OPCode.PROFILE_INFO.opcode,
             JsonObject(
@@ -286,8 +294,6 @@ object SocketManager {
                 }
                 println()
 
-                // mne pohui, rabotaet - ne trogai :trollface:
-                // ok if you know how to fix it - do it
                 runBlocking {
                     ChatManager.processChats(packet.payload.jsonObject["chats"]!!.jsonArray)
                 }
@@ -319,6 +325,9 @@ object SocketManager {
 
                 val buffer = ByteArray(8192)
                 val bytesRead = receiveChannel.readAvailable(buffer, 0, 8192)
+                if (bytesRead < 0) {
+                    socket.close()
+                }
                 println(bytesRead)
                 println(buffer.size)
 
@@ -334,6 +343,35 @@ object SocketManager {
                     val packet = unpackPacket(entirePacket.sliceArray(0..<pos))
                     pos = 0
 
+                    if (packet.opcode == 128) {
+                        var textForwarded : String = ""
+                        var senderForwarded : Long = 0L
+                        var msgForwardedID : String = ""
+                        var forwardedAttaches: JsonElement? = JsonNull
+                        var forwardedType : String = ""
+
+
+                        if (packet.payload.jsonObject["message"]!!.jsonObject.contains("link")) {
+
+                        }
+                        ChatManager.addMessage(packet.payload.jsonObject["message"]?.jsonObject["id"]!!.jsonPrimitive.content, Message(
+                        packet.payload.jsonObject["message"]?.jsonObject["text"]!!.jsonPrimitive.content,
+                        packet.payload.jsonObject["message"]?.jsonObject["time"]!!.jsonPrimitive.long,
+                        packet.payload.jsonObject["message"]?.jsonObject["sender"]!!.jsonPrimitive.long,
+                        if (packet.payload.jsonObject["message"]?.jsonObject?.contains("attaches") == true) packet.payload.jsonObject["message"]?.jsonObject["attaches"]!!.jsonArray else JsonArray(emptyList()),
+                            if (packet.payload.jsonObject["message"]?.jsonObject?.contains("status") == true) packet.payload.jsonObject["message"]?.jsonObject["status"]!!.jsonPrimitive.content else "",
+                            MessageLink(
+                                type = forwardedType,
+                                msgForLink = msgForLink(
+                                    message = textForwarded,
+                                    senderID = senderForwarded,
+                                    attaches = forwardedAttaches,
+                                    msgID = msgForwardedID
+                                )
+                            )
+                        ), packet.payload.jsonObject["chatId"]?.jsonPrimitive?.long ?: 0L
+                    )
+                    }
                     run loop@{
                         SocketManager.packetCallbacks.forEachIndexed { i, cb ->
                             if (cb.seq == packet.seq) {

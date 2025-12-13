@@ -39,11 +39,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
+        val context = this
+        runBlocking {
+            val exampleData = dataStore.data.first()
+            AccountManager.token = exampleData[stringPreferencesKey("token")].toString()
+        }
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
-                SocketManager.connect()
-
+                SocketManager.connect(context)
             }
         }
 

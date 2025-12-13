@@ -59,15 +59,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -78,7 +73,6 @@ class ChatListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
 
         setContent @OptIn(ExperimentalMaterial3Api::class) {
             AppTheme {
@@ -129,7 +123,12 @@ fun DrawChatList() {
         LazyColumn(reverseLayout = true, state = listState) {
             items(
                 chats.entries.toList()
-                    .sortedBy { it.value.messages.toList().last().second.sendTime }) { entry ->
+                    .sortedBy {  (_, value) ->
+                        value.messages.entries.toList()
+                            .maxByOrNull { (_, value) -> value.sendTime }!!.value.sendTime }, key = { entry ->
+                                entry.key
+                            }
+            ) { entry ->
                 println(entry)
                 DrawUser(entry.key, entry.value, LocalContext.current)
             }
@@ -143,9 +142,10 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
     var chatIcon: String
     val users = UserManager.usersList.collectAsState()
     var secondUser = 0L
+    val sortedMessages = chat.messages.entries.toList()
+        .sortedBy { (_, value) -> value.sendTime }
 
     if (chat.type == "DIALOG" && chatID != 0L) {
-
         for (i in chat.users.toList()) {
             if (i.first != AccountManager.accountID) {
                 secondUser = i.first
@@ -181,7 +181,6 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
         modifier = Modifier
             .height(80.dp)
             .fillMaxWidth()
-            .animateContentSize()
     ) {
         Row(
             modifier = Modifier
@@ -190,7 +189,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
 
-            if (!chat.avatarUrl.isEmpty() || chat.type == "DIALOG") {
+            if (chatIcon.isNotEmpty()) {
                 AsyncImage(
                     model = chatIcon,
                     contentDescription = "ChatIcon",
@@ -200,17 +199,11 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
                         .clip(CircleShape)
                 )
             } else {
-                val initial = if (chat.title.isNotEmpty()) {
-                    chat.title.split(" ").mapNotNull { it.firstOrNull() }
-                        .take(2)
-                        .joinToString("")
-                        .uppercase(getDefault())
-                } else {
-                   (users.value[secondUser]?.firstName + users.value[secondUser]?.firstName).split(" ").mapNotNull { it.firstOrNull() }
-                        .take(2)
-                        .joinToString("")
-                        .uppercase(getDefault())
-                }
+                val initial = chatTitle.split(" ").mapNotNull { it.firstOrNull() }
+                    .take(2)
+                    .joinToString("")
+                    .uppercase(getDefault())
+
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -220,8 +213,8 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
                         .background(
                             brush = Brush.linearGradient( // Create a vertical gradient
                                 colors = listOf(
-                                    Utils.getColorForAvatar(chat.title).first,
-                                    Utils.getColorForAvatar(chat.title).second
+                                    Utils.getColorForAvatar(chatTitle).first,
+                                    Utils.getColorForAvatar(chatTitle).second
                                 ) // Define the colors for the gradient
                             )
                         ),
@@ -235,26 +228,28 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
                     )
                 }
             }
+
             var lastMsgUser = ""
 
             if (chat.type == "CHAT") {
-                if (chat.messages.toList().last().second.senderID == AccountManager.accountID) {
+                if (sortedMessages.last().value.senderID == AccountManager.accountID) {
                     lastMsgUser = "Вы: "
                 } else {
-                    lastMsgUser = users.value[chat.messages.toList()
-                        .last().second.senderID]?.firstName.toString()
+                    lastMsgUser = users.value[sortedMessages.last().value.senderID]?.firstName.toString()
 
-                    if (users.value[chat.messages.toList()
-                            .last().second.senderID]?.lastName?.isNotEmpty() ?: false
+                    if (users.value[sortedMessages.last().value.senderID]?.lastName?.isNotEmpty() ?: false
                     ) {
-                        lastMsgUser += " " + users.value[chat.messages.toList()
-                            .last().second.senderID]?.lastName
+                        lastMsgUser += " " + users.value[sortedMessages.last().value.senderID]?.lastName
                     }
 
                     lastMsgUser += ": "
                 }
             }
-            val lastMSGCleared = chat.messages.toList().last().second.message.replace("\n", " ")
+            val lastMSGCleared = if(sortedMessages.last().value.link.type.isNotEmpty()) {
+                sortedMessages.last().value.link.msgForLink.message.replace("\n", " ")
+            } else {
+                sortedMessages.last().value.message.replace("\n", " ")
+            }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -273,11 +268,10 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
                         withStyle(style = SpanStyle(fontSize = 20.sp)) {
                             append(lastMsgUser)
                         }
-                        if (chat.messages.toList().last().second.attaches?.jsonArray?.isNotEmpty()
+                        if (sortedMessages.last().value.attaches?.jsonArray?.isNotEmpty()
                                 ?: false
                         ) {
-                            chat.messages.toList()
-                                .last().second.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                            sortedMessages.last().value.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
                                 val type = jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
                                 if (type == "PHOTO") {
@@ -301,11 +295,8 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context) {
                         placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
                     )
 
-                    if (chat.messages.toList().last().second.attaches?.jsonArray?.isNotEmpty()
-                            ?: false
-                    ) {
-                        chat.messages.toList()
-                            .last().second.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                    if (sortedMessages.last().value.attaches?.jsonArray?.isNotEmpty() ?: false) {
+                        sortedMessages.last().value.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
                             val type = jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
                             if (type == "PHOTO") {

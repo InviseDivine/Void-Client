@@ -1,5 +1,6 @@
 package com.sffteam.openmax
 
+import androidx.room.util.copy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -15,13 +16,28 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 
-data class Message(
-    val message: String,
-    val sendTime: Long,
-    val senderID: Long,
-    val attaches: JsonElement?,
-    val status: String,
+data class msgForLink(
+    val message: String = "",
+    val sendTime: Long = 0L,
+    val senderID: Long = 0L,
+    val attaches: JsonElement? = JsonObject(emptyMap()),
+    val status: String = "",
+    val msgID: String = ""
 )
+
+data class MessageLink(
+    val msgForLink: msgForLink = msgForLink(),
+    val type : String = ""
+)
+data class Message(
+    val message: String = "",
+    val sendTime: Long = 0L,
+    val senderID: Long = 0L,
+    val attaches: JsonElement? = JsonArray(emptyList()),
+    val status: String = "",
+    val link : MessageLink = MessageLink()
+)
+
 
 data class Chat(
     val avatarUrl: String,
@@ -59,7 +75,7 @@ object ChatManager {
                     oldMap[chatID]?.messages?.plus(mapOf(messageID to message)) ?: emptyMap(),
                     oldMap[chatID]?.type ?: "",
                     oldMap[chatID]?.users ?: emptyMap(),
-                    oldMap[chatID]?.usersCount ?: 0
+                    oldMap[chatID]?.usersCount ?: 0,
                 ))
             }
         } catch (e: Exception) {
@@ -71,13 +87,19 @@ object ChatManager {
         val msgList: MutableMap<String, Message> = mutableMapOf()
 
         for (i in messages) {
-            var message = Message("", 0, 0, JsonArray(emptyList()), "")
+            var message = Message()
             var msg = ""
             var sendtime = 0L
             var senderID = 0L
             var attachs = JsonArray(emptyList())
             var status = ""
             var msgID = ""
+
+            var textForwarded : String = ""
+            var senderForwarded : Long = 0L
+            var msgForwardedID : String = ""
+            var forwardedAttaches: JsonElement? = JsonNull
+            var forwardedType : String = ""
 
             try {
                 msg = i.jsonObject["text"]!!.jsonPrimitive.content
@@ -115,28 +137,52 @@ object ChatManager {
                 println(e)
             }
 
+            if (i.jsonObject.contains("link")) {
+                try {
+                    val msgLink = i.jsonObject["link"]
+                    forwardedType = msgLink!!.jsonObject["type"]?.jsonPrimitive!!.content
+                    textForwarded = msgLink.jsonObject["message"]!!.jsonObject["text"]!!.jsonPrimitive.content
+                    senderForwarded = msgLink.jsonObject["message"]!!.jsonObject["sender"]!!.jsonPrimitive.long
+                    msgForwardedID = msgLink.jsonObject["message"]!!.jsonObject["id"]!!.jsonPrimitive.content
+                    forwardedAttaches = msgLink.jsonObject["message"]!!.jsonObject["attaches"]
+                } catch (e: Exception) {
+                    println(e)
+                }
+            }
+
             message = message.copy(
                 message = msg,
                 sendTime = sendtime,
                 senderID = senderID,
                 attaches = attachs,
                 status = status,
+                link = MessageLink(
+                    type = forwardedType,
+                    msgForLink = msgForLink(
+                        message = textForwarded,
+                        senderID = senderForwarded,
+                        attaches = forwardedAttaches,
+                        msgID = msgForwardedID,
+                    )
+                )
             )
-            print(message)
+
+            println("coolmsg $message")
             msgList[msgID] = message
         }
 
+        println("notcool size=${msgList.size}")
         _chatsList.update { oldMap ->
             oldMap + (chatID to Chat(
                 oldMap[chatID]?.avatarUrl ?: "",
                 oldMap[chatID]?.title ?: "",
-                msgList,
+                oldMap[chatID]?.messages?.plus(msgList) ?: emptyMap(),
                 oldMap[chatID]?.type ?: "",
                 oldMap[chatID]?.users ?: emptyMap(),
                 oldMap[chatID]?.usersCount ?: 0
             ))
         }
-        println(_chatsList.value)
+        println(_chatsList.value[chatID]?.messages?.size)
     }
 
     /* Function. */
@@ -164,6 +210,12 @@ object ChatManager {
                 var users = mutableMapOf<Long, Long>()
                 var attaches: JsonElement? = JsonNull
                 var usersCount = 0
+
+                var textForwarded : String = ""
+                var senderForwarded : Long = 0L
+                var msgForwardedID : String = ""
+                var forwardedAttaches: JsonElement? = JsonNull
+                var forwardedType : String = ""
 
                 try {
                     lastmsgtm =
@@ -216,6 +268,19 @@ object ChatManager {
                     attaches = JsonArray(emptyList())
                 }
 
+                if (i.jsonObject["lastMessage"]!!.jsonObject.contains("link")) {
+                    try {
+                        val msgLink = i.jsonObject["lastMessage"]!!.jsonObject["link"]
+                        forwardedType = msgLink!!.jsonObject["type"]?.jsonPrimitive!!.content
+                        textForwarded = msgLink.jsonObject["message"]!!.jsonObject["text"]!!.jsonPrimitive.content
+                        senderForwarded = msgLink.jsonObject["message"]!!.jsonObject["sender"]!!.jsonPrimitive.long
+                        msgForwardedID = msgLink.jsonObject["message"]!!.jsonObject["id"]!!.jsonPrimitive.content
+                        forwardedAttaches = msgLink.jsonObject["message"]!!.jsonObject["attaches"]
+                    } catch (e: Exception) {
+                        println(e)
+                    }
+                }
+
                 if (i.jsonObject.contains("baseIconUrl")) {
                     try {
                         avatarUrl = i.jsonObject["baseIconUrl"]!!.jsonPrimitive.content
@@ -256,6 +321,7 @@ object ChatManager {
                 } catch (e: Exception) {
                     println(e)
                 }
+
                 if (i.jsonObject.contains("participantsCount")) {
                     try {
                         usersCount = i.jsonObject["participantsCount"]!!.jsonPrimitive.int
@@ -265,7 +331,13 @@ object ChatManager {
                 }
 
                 val messages: Map<String, Message> =
-                    mapOf(msgID to Message(lastmsg, lastmsgtm, senderID, attaches, status))
+                    mapOf(msgID to Message(lastmsg, lastmsgtm, senderID, attaches, status,
+                            link = MessageLink(
+                                type = forwardedType, msgForLink = msgForLink(textForwarded,
+                                    senderID = senderForwarded, attaches = forwardedAttaches, msgID = msgForwardedID)
+                            )
+                        )
+                    )
                 val currentMap = mapOf(
                     chatID to Chat(
                         avatarUrl,
@@ -310,6 +382,7 @@ object ChatManager {
                 )
             )
         )
+
         SocketManager.sendPacket(
             packet,
             { packet ->
@@ -319,20 +392,6 @@ object ChatManager {
                 }
             }
         )
-//        WebsocketManager.SendPacket(
-//            OPCode.CONTACTS_INFO.opcode,
-//            JsonObject(
-//                mapOf(
-//                    "contactIds" to JsonArray(userIds),
-//                )
-//            ),
-//            { packet ->
-//                println(packet.payload)
-//                if (packet.payload is JsonObject) {
-//                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
-//                }
-//            }
-//        )
 
         return true
     }

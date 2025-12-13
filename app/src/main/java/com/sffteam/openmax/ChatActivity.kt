@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -19,12 +20,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -48,11 +53,14 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -60,10 +68,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
+import io.ktor.http.websocket.websocketServerAccept
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -88,7 +103,7 @@ class ChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
+        println("joined to chat")
         val chatTitle: String = intent.getStringExtra("chatTitle").toString()
         val chatUrl: String = intent.getStringExtra("chatIcon").toString()
         val chatID: Long = intent.getLongExtra("chatID", 0L)
@@ -96,6 +111,7 @@ class ChatActivity : ComponentActivity() {
         val type: String = intent.getStringExtra("chatType").toString()
 
         println(ChatManager.chatsList.value[chatID]?.messages?.size)
+
         if (ChatManager.chatsList.value[chatID]?.messages?.size == 1) {
             val packet = SocketManager.packPacket(
                 OPCode.CHAT_MESSAGES.opcode,
@@ -124,7 +140,25 @@ class ChatActivity : ComponentActivity() {
         setContent {
             AppTheme() {
                 val chats by ChatManager.chatsList.collectAsState()
+                val sortedChats = chats[chatID]?.messages?.toList()?.toList()
+                    ?.sortedBy { (_, value) -> value.sendTime }
+                val listState = rememberLazyListState()
 
+                val coroutineScope = rememberCoroutineScope()
+
+                var showBottomSheet by remember { mutableStateOf(false) }
+                val sheetState = rememberModalBottomSheetState()
+
+                var removeforall by remember { mutableStateOf(false) }
+
+                var selectedMSGID by remember { mutableLongStateOf(0L) }
+                var showPopup by remember { mutableStateOf(false) }
+
+                val isUserScrolling by remember {
+                    derivedStateOf {
+                        listState.isScrollInProgress
+                    }
+                }
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -139,7 +173,7 @@ class ChatActivity : ComponentActivity() {
                                         )
                                     }
 
-                                    if (!chatUrl.isEmpty() || type == "DIALOG") {
+                                    if (chatUrl.isNotEmpty()) {
                                         AsyncImage(
                                             model = chatUrl,
                                             contentDescription = "ChatIcon",
@@ -244,31 +278,47 @@ class ChatActivity : ComponentActivity() {
                                 if (type == "CHANNEL") {
                                     DrawBottomChannel(chatID)
                                 } else {
-                                    DrawBottomDialog(chatID)
+                                    DrawBottomDialog(chatID, listState, coroutineScope)
                                 }
                             }
                         )
                     }
                 ) {
+                    LaunchedEffect(isUserScrolling) {
+                        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+                            .collect { visibleItems ->
+                                val listSorted = chats[chatID]?.messages?.entries?.toList()
+                                    ?.sortedBy { (_, value) -> value.sendTime }
+                                println("size ${listSorted?.size}")
 
-                    val listState = rememberLazyListState()
-                    val coroutineScope = rememberCoroutineScope()
+                                if (visibleItems[0].index <= 5 && chats[chatID]?.messages?.size?.rem(
+                                        30
+                                    ) == 0 && isUserScrolling) {
+                                    println(visibleItems[0].index)
+                                    print("cool: ")
+                                    println(listSorted)
+                                    val packet = SocketManager.packPacket(
+                                        OPCode.CHAT_MESSAGES.opcode,
+                                        JsonObject(
+                                            mapOf(
+                                                "chatId" to JsonPrimitive(chatID),
+                                                "from" to JsonPrimitive(
+                                                    listSorted?.first()?.value?.sendTime
+                                                ),
+                                                "forward" to JsonPrimitive(0),
+                                                "backward" to JsonPrimitive(31),
+                                                "getMessages" to JsonPrimitive(true)
+                                            )
+                                        )
+                                    )
 
-                    var showBottomSheet by remember { mutableStateOf(false) }
-                    val sheetState = rememberModalBottomSheetState()
-
-                    var removeforall by remember { mutableStateOf(false) }
-
-                    var selectedMSGID by remember { mutableStateOf(0L) }
-                    var showPopup by remember { mutableStateOf(false) }
-
-                    LaunchedEffect(chats) {
-                        coroutineScope.launch {
-                            listState.scrollToItem(index = chats[chatID]?.messages?.size ?: 0)
-
-                            println(chats[chatID]!!.messages.toList().last())
-                            println("scrolled2")
-                        }
+                                    SocketManager.sendPacket(packet, { packet ->
+                                        if (packet.payload is JsonObject) {
+                                            ChatManager.processMessages(packet.payload["messages"]!!.jsonArray, chatID)
+                                        }
+                                    })
+                                }
+                            }
                     }
                     if (showPopup) {
                         AlertDialog(
@@ -380,58 +430,64 @@ class ChatActivity : ComponentActivity() {
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                                 modifier = Modifier.padding(start = 8.dp)
                             ) {
-                                Row(modifier = Modifier.fillMaxWidth()) {
-                                    Icon(
-                                        Icons.Filled.Edit,
-                                        contentDescription = "edit message",
-                                        modifier = Modifier
-                                            .padding(end = 10.dp)
-                                            .size(20.dp)
-                                            .align(Alignment.CenterVertically)
-                                    )
+                                if (chats[chatID]?.messages[selectedMSGID.toString()]?.senderID == AccountManager.accountID) {
+                                    Row(modifier = Modifier.fillMaxWidth()) {
+                                        Icon(
+                                            Icons.Filled.Edit,
+                                            contentDescription = "edit message",
+                                            modifier = Modifier
+                                                .padding(end = 10.dp)
+                                                .size(20.dp)
+                                                .align(Alignment.CenterVertically)
 
-                                    Text(
-                                        text = "Редактировать",
-                                        fontSize = 25.sp,
-                                        modifier = Modifier
-                                            .align(Alignment.CenterVertically)
-                                    )
-                                }
-                                Row(modifier = Modifier
-                                    .clickable {
-                                        showPopup = true
+                                        )
+
+                                        Text(
+                                            text = "Редактировать",
+                                            fontSize = 25.sp,
+                                            modifier = Modifier
+                                                .align(Alignment.CenterVertically)
+                                        )
                                     }
-                                    .fillMaxWidth()) {
-                                    Icon(
-                                        Icons.Filled.Delete,
-                                        contentDescription = "delete message",
-                                        modifier = Modifier
-                                            .padding(end = 10.dp)
-                                            .size(20.dp)
-                                            .align(Alignment.CenterVertically),
-                                        tint = Color.Red
-                                    )
+                                    Row(modifier = Modifier
+                                        .clickable {
+                                            showPopup = true
+                                        }
+                                        .fillMaxWidth()) {
+                                        Icon(
+                                            Icons.Filled.Delete,
+                                            contentDescription = "delete message",
+                                            modifier = Modifier
+                                                .padding(end = 10.dp)
+                                                .size(20.dp)
+                                                .align(Alignment.CenterVertically),
+                                            tint = Color.Red
+                                        )
 
-                                    Text(
-                                        text = "Удалить",
-                                        fontSize = 25.sp,
-                                        color = Color.Red,
-                                        modifier = Modifier
-                                            .align(Alignment.CenterVertically)
-                                    )
+                                        Text(
+                                            text = "Удалить",
+                                            fontSize = 25.sp,
+                                            color = Color.Red,
+                                            modifier = Modifier
+                                                .align(Alignment.CenterVertically)
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-
+                    var prevMsg : Message
                     LazyColumn(
                         modifier = Modifier
                             .padding(it)
                             .fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                         state = listState
                     ) {
-                        items(chats[chatID]?.messages?.toList() ?: emptyList()) { message ->
+                        itemsIndexed(
+                            sortedChats ?: emptyList(), key = { index, message ->
+                                message.first
+                            }) { index, message ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -444,88 +500,309 @@ class ChatActivity : ComponentActivity() {
                                     if (message.second.senderID == AccountManager.accountID) Alignment.End else Alignment.Start
                                 ),
                             ) {
-                                DrawMessage(message.second)
+                                DrawMessage(message.second, type,
+                                    if (index != sortedChats?.size?.minus(1)) sortedChats?.get(index + 1)?.second ?: Message() else Message(),
+                                    if (index > 0) sortedChats?.get(index - 1)?.second ?: Message() else Message()
+                                )
                             }
                         }
                     }
-                }
+                    val isAtBottom by remember {
+                        derivedStateOf {
+                            val visibleItems = listState.layoutInfo.visibleItemsInfo
+                            val totalItems = listState.layoutInfo.totalItemsCount
 
+                            visibleItems.isNotEmpty() &&
+                                    visibleItems.last().index >= totalItems - 5
+                        }
+                    }
+
+                    println("firstvis $isAtBottom")
+
+                    LaunchedEffect(chats) {
+                        val msgSize : Int = chats[chatID]!!.messages.size
+                        val visibleItems = listState.layoutInfo.visibleItemsInfo
+                        val lastVisibleIndex = visibleItems.lastOrNull()?.index ?: -1
+
+                        println(lastVisibleIndex)
+
+                        if (isAtBottom) {
+                            println("eee rock")
+                            listState.scrollToItem(
+                                index = msgSize,
+                                scrollOffset = 0
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalTime::class)
+@OptIn(ExperimentalTime::class, DelicateCoroutinesApi::class)
 @Composable
-fun DrawMessage(message: Message) {
-    Box(
-        modifier = Modifier
-            .widthIn(max = 300.dp, min = 100.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(color = Color.Red)
-            .padding(start = 2.dp, end = 2.dp, top = 4.dp)
-    ) {
-        Column {
-            if (message.attaches!!.jsonArray.isNotEmpty()) {
-                DrawImages(message.attaches.jsonArray)
+fun DrawMessage(message: Message, chatType : String, previousMessage : Message, nextMessage : Message) {
+    val users by UserManager.usersList.collectAsState()
+
+    var username = users[message.senderID]?.firstName
+    if (users[message.senderID]?.lastName?.isNotEmpty() == true) {
+        username += " " + users[message.senderID]?.lastName
+    }
+    println(chatType)
+    Row(modifier = Modifier.padding(
+        start = if (chatType != "CHAT" || (message.senderID != AccountManager.accountID && previousMessage.senderID != message.senderID)) 0.dp else 49.dp,
+    ), horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)) {
+        if (chatType == "CHAT" && message.senderID != AccountManager.accountID && previousMessage.senderID != message.senderID) {
+            if (!users.containsKey(message.senderID)) {
+                val packet = SocketManager.packPacket(OPCode.CONTACTS_INFO.opcode,
+                    JsonObject(
+                        mapOf(
+                            "contactIds" to JsonArray(listOf(Json.encodeToJsonElement(Long.serializer(), message.senderID))),
+                        )
+                    )
+                )
+
+                GlobalScope.launch {
+                    SocketManager.sendPacket(
+                        packet,
+                        { packet ->
+                            println(packet.payload)
+                            if (packet.payload is JsonObject) {
+                                UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                            }
+                        }
+                    )
+                }
             }
 
-            Text(
-                message.message,
-                fontSize = 24.sp,
-                modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 16.dp)
-            )
+            if (users[message.senderID]?.avatarUrl?.isNotEmpty() == true) {
+                AsyncImage(
+                    model = users[message.senderID]?.avatarUrl,
+                    contentDescription = "ChatIcon",
+                    modifier = Modifier
+                        .width(45.dp)
+                        .height(45.dp)
+                        .clip(CircleShape)
+                        .align(Alignment.Bottom),
+                    contentScale = ContentScale.Crop,
+
+                )
+            } else {
+                val initial = username?.split(" ")?.mapNotNull { it.firstOrNull() }
+                    ?.take(2)
+                    ?.joinToString("")
+                    ?.uppercase(getDefault())
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .width(45.dp)
+                        .height(45.dp)
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Utils.getColorForAvatar(username.toString()).first,
+                                    Utils.getColorForAvatar(username.toString()).second
+                                )
+                            )
+                        )
+                        .align(Alignment.Bottom)
+                    ) {
+                    Text(
+                        text = initial.toString(),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontSize = 25.sp
+                    )
+                }
+            }
         }
 
-        val instant = fromEpochMilliseconds(message.sendTime)
-        val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-        var minutezero: String = "0"
-
-        minutezero = if (localDateTime.minute < 10) {
-            "0" + localDateTime.minute.toString()
-        } else {
-            localDateTime.minute.toString()
-        }
-
-        val time = "${localDateTime.hour}:${minutezero}"
-
-        Row(
+        Box(
             modifier = Modifier
-                .padding(top = 20.dp, end = 4.dp)
-                .align(Alignment.BottomEnd)
+                .widthIn(max = 300.dp, min = 100.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(color = Color.Red)
+                .padding(start = 4.dp, end = 2.dp, top = 4.dp)
         ) {
-            if (message.status == "EDITED") {
-                Icon(
-                    Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
-                        .size(16.dp)
+            Column {
+                if (chatType == "CHAT" && message.senderID != AccountManager.accountID && nextMessage.senderID != message.senderID) {
+                    Text(
+                        username.toString(),
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(start = 6.dp, end = 2.dp)
+                    )
+                }
+                if (message.link.type.isNotEmpty()) {
+                    if (!users.containsKey(message.link.msgForLink.senderID)) {
+                        val packet = SocketManager.packPacket(OPCode.CONTACTS_INFO.opcode,
+                            JsonObject(
+                                mapOf(
+                                    "contactIds" to JsonArray(listOf(Json.encodeToJsonElement(Long.serializer(), message.link.msgForLink.senderID))),
+                                )
+                            )
+                        )
+
+                        GlobalScope.launch {
+                            SocketManager.sendPacket(
+                                packet,
+                                { packet ->
+                                    println(packet.payload)
+                                    if (packet.payload is JsonObject) {
+                                        UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    val fromUserForward = users[message.link.msgForLink.senderID]?.firstName + " " + users[message.link.msgForLink.senderID]?.lastName
+
+                    val annotatedString = buildAnnotatedString {
+                        withStyle(style = SpanStyle(fontSize = 15.sp)) {
+                            append("Переслано от: ")
+                        }
+
+                        appendInlineContent(id = "avatar")
+
+                        withStyle(style = SpanStyle(fontSize = 15.sp)) {
+                            append(fromUserForward)
+                        }
+                    }
+                    val inlineContentMap = mutableMapOf<String, InlineTextContent>(
+
+                    )
+                    val placeholder = Placeholder(
+                        width = 30.sp,
+                        height = 30.sp,
+                        placeholderVerticalAlign = PlaceholderVerticalAlign.Center
+                    )
+
+                    inlineContentMap["avatar"] = InlineTextContent(placeholder) { _ ->
+                        if (users[message.link.msgForLink.senderID]?.avatarUrl?.isNotEmpty() == true) {
+                            AsyncImage(
+                                model = users[message.link.msgForLink.senderID]?.avatarUrl,
+                                contentDescription = "ChatIcon",
+                                modifier = Modifier
+                                    .width(30.dp)
+                                    .height(30.dp)
+                                    .clip(CircleShape)
+                                    .padding(start = 2.dp, end = 2.dp)
+                                    .fillMaxSize(),
+                                alignment = Alignment.Center
+                            )
+                        } else {
+                            val initial = fromUserForward.split(" ").mapNotNull { it.firstOrNull() }
+                                .take(2)
+                                .joinToString("")
+                                .uppercase(getDefault())
+
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .width(30.dp)
+                                    .height(30.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                Utils.getColorForAvatar(fromUserForward).first,
+                                                Utils.getColorForAvatar(fromUserForward).second
+                                            )
+                                        )
+                                    )
+                                    .fillMaxSize()
+                                    .padding(start = 2.dp, end = 2.dp)
+                                ) {
+                                Text(
+                                    text = initial.toString(),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        annotatedString,
+                        inlineContent = inlineContentMap,
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(start = 4.dp, end = 2.dp)
+                    )
+                    if (message.link.msgForLink.attaches!!.jsonArray.isNotEmpty()) {
+                        DrawImages(message.link.msgForLink.attaches.jsonArray)
+                    }
+
+                    Text(
+                        message.link.msgForLink.message,
+                        fontSize = 24.sp,
+                        modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 16.dp)
+                    )
+                } else {
+                    if (message.attaches!!.jsonArray.isNotEmpty()) {
+                        DrawImages(message.attaches.jsonArray)
+                    }
+
+                    Text(
+                        message.message,
+                        fontSize = 24.sp,
+                        modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 16.dp)
+                    )
+                }
+            }
+
+            val instant = fromEpochMilliseconds(message.sendTime)
+            val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+            var minutezero: String = "0"
+
+            minutezero = if (localDateTime.minute < 10) {
+                "0" + localDateTime.minute.toString()
+            } else {
+                localDateTime.minute.toString()
+            }
+
+            val time = "${localDateTime.hour}:${minutezero}"
+
+            Row(
+                modifier = Modifier
+                    .padding(top = 20.dp, end = 4.dp)
+                    .align(Alignment.BottomEnd)
+            ) {
+                if (message.status == "EDITED") {
+                    Icon(
+                        Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
+                            .size(16.dp)
+                            .align(
+                                Alignment.Bottom
+                            )
+                            .alpha(0.8f)
+                    )
+                }
+
+                Text(
+                    time,
+                    modifier = Modifier
                         .align(
                             Alignment.Bottom
                         )
-                        .alpha(0.8f)
+                        .alpha(0.8f),
                 )
             }
-
-            Text(
-                time,
-                modifier = Modifier
-                    .align(
-                        Alignment.Bottom
-                    )
-                    .alpha(0.8f),
-            )
         }
     }
 }
 
+@OptIn(DelicateCoroutinesApi::class)
 @Composable
-fun DrawBottomDialog(chatID: Long) {
+fun DrawBottomDialog(chatID: Long, listState: LazyListState, coroutineScope: CoroutineScope) {
     var message by remember { mutableStateOf("") }
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        IconButton(onClick = {
-        }) {
+        IconButton(onClick = {}) {
             Icon(Icons.Filled.Add, contentDescription = "add")
         }
         OutlinedTextField(
@@ -587,6 +864,7 @@ fun DrawBottomDialog(chatID: Long) {
 
                                 println(msg)
                                 ChatManager.addMessage(msgID, msg, chatID)
+
                             }
                         }
                     )
