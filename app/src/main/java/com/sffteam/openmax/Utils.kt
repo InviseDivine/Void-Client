@@ -1,9 +1,11 @@
 package com.sffteam.openmax
 
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.ui.graphics.Color
 import kotlin.math.absoluteValue
 
 object Utils {
+    lateinit var windowSize : WindowSizeClass
     fun getColorForAvatar(avatar: String): Pair<Color, Color> {
         val colors = listOf(
             Pair(Color(0xFFFF0026), Color(0xFFFF00BB)),

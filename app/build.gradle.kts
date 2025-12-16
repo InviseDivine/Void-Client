@@ -63,6 +63,10 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.compose.adaptive)
+    implementation(libs.androidx.compose.material3.window.size.class1)
+    implementation(libs.androidx.compose.ui.text)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -86,4 +90,5 @@ dependencies {
     implementation("com.ensarsarajcic.kotlinx:serialization-msgpack:0.6.0")
     implementation("org.msgpack:jackson-dataformat-msgpack:0.9.0")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
+    implementation(libs.autolinktext)
 }

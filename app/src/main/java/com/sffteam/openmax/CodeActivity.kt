@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -66,7 +69,7 @@ class CodeActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    TextField(
+                    OutlinedTextField(
                         value = code.value,
                         onValueChange = { newText -> code.value = newText },
                         label = { Text("Введите код из СМС") },
@@ -83,6 +86,7 @@ class CodeActivity : ComponentActivity() {
 
                     val context = LocalContext.current
                     Button(
+                        modifier = Modifier.padding(16.dp),
                         onClick = {
                             val packet = SocketManager.packPacket(
                                 OPCode.CHECK_CODE.opcode,
@@ -107,28 +111,38 @@ class CodeActivity : ComponentActivity() {
                                                 errorText.value =
                                                     packet.payload["localizedMessage"].toString()
                                             } else if ("tokenAttrs" in packet.payload) {
-                                                val intent =
-                                                    Intent(context, ChatListActivity::class.java)
+                                                if ("REGISTER" in packet.payload["tokenAttrs"]!!.jsonObject) {
+                                                    val intent = Intent(context, RegisterActivity::class.java)
 
-                                                runBlocking {
-                                                    dataStore.edit { settings ->
-                                                        // Nice sandwich lol
-                                                        val token =
-                                                            packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
-                                                        settings[stringPreferencesKey("token")] =
-                                                            token
-                                                        AccountManager.token = token
+                                                    val token = packet.payload["tokenAttrs"]!!.jsonObject["REGISTER"]!!.jsonObject["token"]!!.jsonPrimitive.content
+
+                                                    intent.putExtra("token", token)
+
+                                                    startActivity(intent)
+
+                                                    finish()
+                                                } else {
+                                                    val intent = Intent(context, ChatListActivity::class.java)
+                                                    runBlocking {
+                                                        dataStore.edit { settings ->
+                                                            // Nice sandwich lol
+                                                            val token =
+                                                                packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
+                                                            settings[stringPreferencesKey("token")] =
+                                                                token
+                                                            AccountManager.token = token
+                                                        }
+
                                                     }
 
+                                                    GlobalScope.launch {
+                                                        SocketManager.loginToAccount()
+                                                    }
+
+                                                    context.startActivity(intent)
+
+                                                    finish()
                                                 }
-
-                                                GlobalScope.launch {
-                                                    SocketManager.loginToAccount()
-                                                }
-
-                                                context.startActivity(intent)
-
-                                                finish()
                                             } else {
                                                 println("wtf")
                                             }

@@ -10,13 +10,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,6 +32,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
@@ -40,15 +44,20 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,19 +77,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
+import com.sffteam.openmax.ui.theme.primaryContainerDark
+import com.sffteam.openmax.ui.theme.primaryDark
 import io.ktor.http.websocket.websocketServerAccept
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -93,6 +109,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import sh.calvin.autolinktext.rememberAutoLinkText
 import java.util.Locale.getDefault
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
@@ -141,7 +158,7 @@ class ChatActivity : ComponentActivity() {
             AppTheme() {
                 val chats by ChatManager.chatsList.collectAsState()
                 val sortedChats = chats[chatID]?.messages?.toList()?.toList()
-                    ?.sortedBy { (_, value) -> value.sendTime }
+                    ?.sortedByDescending { (_, value) -> value.sendTime }
                 val listState = rememberLazyListState()
 
                 val coroutineScope = rememberCoroutineScope()
@@ -162,6 +179,12 @@ class ChatActivity : ComponentActivity() {
                 Scaffold(
                     topBar = {
                         TopAppBar(
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = colorScheme.surfaceDim,
+                                titleContentColor = Color.White,
+                                navigationIconContentColor = Color.White,
+                                actionIconContentColor = Color.White
+                            ),
                             title = {
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -169,7 +192,7 @@ class ChatActivity : ComponentActivity() {
                                     IconButton(onClick = { finish() }) {
                                         Icon(
                                             Icons.AutoMirrored.Filled.ArrowBackIos,
-                                            contentDescription = "Меню"
+                                            contentDescription = "Вернуться в меню"
                                         )
                                     }
 
@@ -288,13 +311,16 @@ class ChatActivity : ComponentActivity() {
                         snapshotFlow { listState.layoutInfo.visibleItemsInfo }
                             .collect { visibleItems ->
                                 val listSorted = chats[chatID]?.messages?.entries?.toList()
-                                    ?.sortedBy { (_, value) -> value.sendTime }
+                                    ?.sortedByDescending { (_, value) -> value.sendTime }
                                 println("size ${listSorted?.size}")
+                                val totalItems = listState.layoutInfo.totalItemsCount
+                                println("visItems ${visibleItems[0].index}")
+                                println("visItems ${visibleItems.last().index}")
 
-                                if (visibleItems[0].index <= 5 && chats[chatID]?.messages?.size?.rem(
+                                if (visibleItems.last().index >= listSorted!!.size - 5 && chats[chatID]?.messages?.size?.rem(
                                         30
                                     ) == 0 && isUserScrolling) {
-                                    println(visibleItems[0].index)
+
                                     print("cool: ")
                                     println(listSorted)
                                     val packet = SocketManager.packPacket(
@@ -303,7 +329,7 @@ class ChatActivity : ComponentActivity() {
                                             mapOf(
                                                 "chatId" to JsonPrimitive(chatID),
                                                 "from" to JsonPrimitive(
-                                                    listSorted?.first()?.value?.sendTime
+                                                    listSorted?.last()?.value?.sendTime
                                                 ),
                                                 "forward" to JsonPrimitive(0),
                                                 "backward" to JsonPrimitive(31),
@@ -482,12 +508,26 @@ class ChatActivity : ComponentActivity() {
                             .padding(it)
                             .fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
-                        state = listState
+                        state = listState,
+                        reverseLayout = true
                     ) {
                         itemsIndexed(
                             sortedChats ?: emptyList(), key = { index, message ->
                                 message.first
                             }) { index, message ->
+                            val horizontal: Alignment.Horizontal = if (message.second.senderID == AccountManager.accountID && !(message.second.attaches?.jsonArray?.isNotEmpty() == true && message.second.attaches?.jsonArray?.last()?.jsonObject?.contains(
+                                    "event"
+                                ) == true)) {
+                                Alignment.End
+                            } else if (message.second.attaches?.jsonArray?.isNotEmpty() == true && message.second.attaches?.jsonArray?.last()?.jsonObject?.contains(
+                                    "event"
+                                ) == true
+                            )  {
+                                Alignment.CenterHorizontally
+                            } else {
+                                Alignment.Start
+                            }
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -497,7 +537,7 @@ class ChatActivity : ComponentActivity() {
                                     },
                                 horizontalArrangement = Arrangement.spacedBy(
                                     16.dp,
-                                    if (message.second.senderID == AccountManager.accountID) Alignment.End else Alignment.Start
+                                    horizontal
                                 ),
                             ) {
                                 DrawMessage(message.second, type,
@@ -513,23 +553,17 @@ class ChatActivity : ComponentActivity() {
                             val totalItems = listState.layoutInfo.totalItemsCount
 
                             visibleItems.isNotEmpty() &&
-                                    visibleItems.last().index >= totalItems - 5
+                                    visibleItems.first().index < 5
                         }
                     }
 
-                    println("firstvis $isAtBottom")
-
                     LaunchedEffect(chats) {
+                        println("testttt")
                         val msgSize : Int = chats[chatID]!!.messages.size
-                        val visibleItems = listState.layoutInfo.visibleItemsInfo
-                        val lastVisibleIndex = visibleItems.lastOrNull()?.index ?: -1
-
-                        println(lastVisibleIndex)
 
                         if (isAtBottom) {
-                            println("eee rock")
                             listState.scrollToItem(
-                                index = msgSize,
+                                index = 0,
                                 scrollOffset = 0
                             )
                         }
@@ -546,249 +580,675 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
     val users by UserManager.usersList.collectAsState()
 
     var username = users[message.senderID]?.firstName
+
     if (users[message.senderID]?.lastName?.isNotEmpty() == true) {
         username += " " + users[message.senderID]?.lastName
     }
-    println(chatType)
-    Row(modifier = Modifier.padding(
-        start = if (chatType != "CHAT" || (message.senderID != AccountManager.accountID && previousMessage.senderID != message.senderID)) 0.dp else 49.dp,
-    ), horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)) {
-        if (chatType == "CHAT" && message.senderID != AccountManager.accountID && previousMessage.senderID != message.senderID) {
-            if (!users.containsKey(message.senderID)) {
-                val packet = SocketManager.packPacket(OPCode.CONTACTS_INFO.opcode,
-                    JsonObject(
-                        mapOf(
-                            "contactIds" to JsonArray(listOf(Json.encodeToJsonElement(Long.serializer(), message.senderID))),
-                        )
-                    )
-                )
-
-                GlobalScope.launch {
-                    SocketManager.sendPacket(
-                        packet,
-                        { packet ->
-                            println(packet.payload)
-                            if (packet.payload is JsonObject) {
-                                UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
-                            }
-                        }
-                    )
-                }
-            }
-
-            if (users[message.senderID]?.avatarUrl?.isNotEmpty() == true) {
-                AsyncImage(
-                    model = users[message.senderID]?.avatarUrl,
-                    contentDescription = "ChatIcon",
-                    modifier = Modifier
-                        .width(45.dp)
-                        .height(45.dp)
-                        .clip(CircleShape)
-                        .align(Alignment.Bottom),
-                    contentScale = ContentScale.Crop,
-
-                )
-            } else {
-                val initial = username?.split(" ")?.mapNotNull { it.firstOrNull() }
-                    ?.take(2)
-                    ?.joinToString("")
-                    ?.uppercase(getDefault())
-
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .width(45.dp)
-                        .height(45.dp)
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Utils.getColorForAvatar(username.toString()).first,
-                                    Utils.getColorForAvatar(username.toString()).second
-                                )
+    if (!(message.attaches?.jsonArray?.isNotEmpty() == true && message.attaches.jsonArray.last().jsonObject.contains(
+            "event"
+        ))
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                start = if (chatType != "CHAT" || (message.senderID != AccountManager.accountID && nextMessage.senderID != message.senderID)) 0.dp else 49.dp,
+            ), horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
+        ) {
+            if (chatType == "CHAT" && message.senderID != AccountManager.accountID && nextMessage.senderID != message.senderID) {
+                if (!users.containsKey(message.senderID)) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            message.senderID
+                                        )
+                                    )
+                                ),
                             )
                         )
-                        .align(Alignment.Bottom)
+                    )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (users[message.senderID]?.avatarUrl?.isNotEmpty() == true) {
+                    AsyncImage(
+                        model = users[message.senderID]?.avatarUrl,
+                        contentDescription = "ChatIcon",
+                        modifier = Modifier
+                            .width(45.dp)
+                            .height(45.dp)
+                            .clip(CircleShape)
+                            .align(Alignment.Bottom),
+                        contentScale = ContentScale.Crop,
+
+                        )
+                } else {
+                    val initial = username?.split(" ")?.mapNotNull { it.firstOrNull() }
+                        ?.take(2)
+                        ?.joinToString("")
+                        ?.uppercase(getDefault())
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .width(45.dp)
+                            .height(45.dp)
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Utils.getColorForAvatar(username.toString()).first,
+                                        Utils.getColorForAvatar(username.toString()).second
+                                    )
+                                )
+                            )
+                            .align(Alignment.Bottom)
                     ) {
+                        Text(
+                            text = initial.toString(),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontSize = 25.sp
+                        )
+                    }
+                }
+            }
+            val configuration = LocalConfiguration.current
+            val screenWidth = configuration.screenWidthDp.dp
+
+            Box(
+                modifier = Modifier
+                    .sizeIn(minWidth = 100.dp, maxWidth = screenWidth * 0.7f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(color = if (message.senderID == AccountManager.accountID) colorScheme.primaryContainer else colorScheme.secondaryContainer)
+                    .padding(start = 4.dp, end = 2.dp, top = 4.dp)
+            ) {
+                Column {
+                    if (chatType == "CHAT" && message.senderID != AccountManager.accountID && previousMessage.senderID != message.senderID) {
+                        Text(
+                            username.toString(),    
+                            fontSize = 17.sp,
+                            modifier = Modifier.padding(start = 6.dp, end = 2.dp)
+                        )
+                    }
+                    if (message.link.type.isNotEmpty() && message.link.type == "FORWARD") {
+                        if (!users.containsKey(message.link.msgForLink.senderID)) {
+                            val packet = SocketManager.packPacket(
+                                OPCode.CONTACTS_INFO.opcode,
+                                JsonObject(
+                                    mapOf(
+                                        "contactIds" to JsonArray(
+                                            listOf(
+                                                Json.encodeToJsonElement(
+                                                    Long.serializer(),
+                                                    message.link.msgForLink.senderID
+                                                )
+                                            )
+                                        ),
+                                    )
+                                )
+                            )
+
+                            GlobalScope.launch {
+                                SocketManager.sendPacket(
+                                    packet,
+                                    { packet ->
+                                        println(packet.payload)
+                                        if (packet.payload is JsonObject) {
+                                            UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        val fromUserForward =
+                            users[message.link.msgForLink.senderID]?.firstName + " " + users[message.link.msgForLink.senderID]?.lastName
+
+                        val annotatedString = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontSize = 15.sp)) {
+                                append("Переслано от: ")
+                            }
+
+                            appendInlineContent(id = "avatar")
+
+                            withStyle(style = SpanStyle(fontSize = 15.sp)) {
+                                append(fromUserForward)
+                            }
+                        }
+                        val inlineContentMap = mutableMapOf<String, InlineTextContent>(
+
+                        )
+                        val placeholder = Placeholder(
+                            width = 30.sp,
+                            height = 30.sp,
+                            placeholderVerticalAlign = PlaceholderVerticalAlign.Center
+                        )
+
+                        inlineContentMap["avatar"] = InlineTextContent(placeholder) { _ ->
+                            if (users[message.link.msgForLink.senderID]?.avatarUrl?.isNotEmpty() == true) {
+                                AsyncImage(
+                                    model = users[message.link.msgForLink.senderID]?.avatarUrl,
+                                    contentDescription = "ChatIcon",
+                                    modifier = Modifier
+                                        .width(30.dp)
+                                        .height(30.dp)
+                                        .clip(CircleShape)
+                                        .fillMaxSize(),
+                                    alignment = Alignment.Center,
+                                    contentScale = ContentScale.FillBounds
+                                )
+                            } else {
+                                val initial =
+                                    fromUserForward.split(" ").mapNotNull { it.firstOrNull() }
+                                        .take(2)
+                                        .joinToString("")
+                                        .uppercase(getDefault())
+
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .width(30.dp)
+                                        .height(30.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    Utils.getColorForAvatar(fromUserForward).first,
+                                                    Utils.getColorForAvatar(fromUserForward).second
+                                                )
+                                            )
+                                        )
+                                        .fillMaxSize()
+                                        .padding(start = 2.dp, end = 2.dp)
+                                ) {
+                                    Text(
+                                        text = initial,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            annotatedString,
+                            inlineContent = inlineContentMap,
+                            fontSize = 15.sp,
+                            modifier = Modifier.padding(start = 4.dp, end = 2.dp).heightIn(max = 50.dp)
+                        )
+                        if (message.link.msgForLink.attaches!!.jsonArray.isNotEmpty()) {
+                            DrawImages(message.link.msgForLink.attaches.jsonArray)
+                        }
+
+                        Text(
+                            message.link.msgForLink.message,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 16.dp)
+                        )
+                    } else {
+                        if (message.link.type.isNotEmpty() && message.link.type == "REPLY") {
+                            Box(modifier = Modifier
+                                .background(color = if (message.senderID == AccountManager.accountID) colorScheme.onPrimary.copy(0.6f) else colorScheme.onSecondary.copy(0.6f)
+                                    , shape = RoundedCornerShape(8.dp))
+                                .padding(start = 2.dp)
+                                .sizeIn(minWidth = 100.dp, maxWidth = screenWidth * 0.7f)
+                            ) {
+                                    var userName = users[message.link.msgForLink.senderID]?.firstName
+
+                                    if (users[message.link.msgForLink.senderID]?.lastName?.isNotEmpty() == true) {
+                                        userName += " " + users[message.link.msgForLink.senderID]?.lastName
+                                    }
+
+                                    if (!users.containsKey(message.link.msgForLink.senderID)) {
+                                        val packet = SocketManager.packPacket(
+                                            OPCode.CONTACTS_INFO.opcode,
+                                            JsonObject(
+                                                mapOf(
+                                                    "contactIds" to JsonArray(
+                                                        listOf(
+                                                            Json.encodeToJsonElement(
+                                                                Long.serializer(),
+                                                                message.link.msgForLink.senderID
+                                                            )
+                                                        )
+                                                    ),
+                                                )
+                                            )
+                                        )
+
+                                        GlobalScope.launch {
+                                            SocketManager.sendPacket(
+                                                packet,
+                                                { packet ->
+                                                    println(packet.payload)
+                                                    if (packet.payload is JsonObject) {
+                                                        UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    Column() {
+                                        Text(
+                                            userName.toString(),
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.padding(start = 2.dp)
+                                        )
+                                        if (message.link.msgForLink.attaches!!.jsonArray.isNotEmpty()) {
+                                            DrawImages(message.link.msgForLink.attaches.jsonArray)
+                                        }
+
+                                        Text(message.link.msgForLink.message,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(start = 2.dp))
+                                    }
+                            }
+                        }
+                        if (message.attaches!!.jsonArray.isNotEmpty()) {
+                            DrawImages(message.attaches.jsonArray)
+                        }
+
+                        Text(
+                            AnnotatedString.rememberAutoLinkText(
+                                message.message
+                            ),
+                            autoSize = TextAutoSize.StepBased(
+                                minFontSize = 10.sp,
+                                maxFontSize = 16.sp
+                            ),
+                            modifier = Modifier.padding(start = 4.dp, end = 6.dp, bottom = 16.dp)
+                        )
+                    }
+                }
+
+                val instant = fromEpochMilliseconds(message.sendTime)
+                val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+                var minutezero: String = "0"
+
+                minutezero = if (localDateTime.minute < 10) {
+                    "0" + localDateTime.minute.toString()
+                } else {
+                    localDateTime.minute.toString()
+                }
+
+                val time = "${localDateTime.hour}:${minutezero}"
+
+                Row(
+                    modifier = Modifier
+                        .padding(top = 20.dp, end = 4.dp)
+                        .align(Alignment.BottomEnd)
+                ) {
+                    if (message.status == "EDITED") {
+                        Icon(
+                            Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
+                                .size(16.dp)
+                                .align(
+                                    Alignment.Bottom
+                                )
+                                .alpha(0.8f)
+                        )
+                    }
+
                     Text(
-                        text = initial.toString(),
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontSize = 25.sp
+                        time,
+                        modifier = Modifier
+                            .align(
+                                Alignment.Bottom
+                            )
+                            .alpha(0.8f),
                     )
                 }
             }
         }
+    } else {
+        val users by UserManager.usersList.collectAsState()
+        val attach = message.attaches.jsonArray.last()
+        val event = attach.jsonObject["event"]?.jsonPrimitive?.content
+        var userName = ""
 
-        Box(
-            modifier = Modifier
-                .widthIn(max = 300.dp, min = 100.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(color = Color.Red)
-                .padding(start = 4.dp, end = 2.dp, top = 4.dp)
-        ) {
-            Column {
-                if (chatType == "CHAT" && message.senderID != AccountManager.accountID && nextMessage.senderID != message.senderID) {
-                    Text(
-                        username.toString(),
-                        fontSize = 18.sp,
-                        modifier = Modifier.padding(start = 6.dp, end = 2.dp)
-                    )
-                }
-                if (message.link.type.isNotEmpty()) {
-                    if (!users.containsKey(message.link.msgForLink.senderID)) {
-                        val packet = SocketManager.packPacket(OPCode.CONTACTS_INFO.opcode,
-                            JsonObject(
-                                mapOf(
-                                    "contactIds" to JsonArray(listOf(Json.encodeToJsonElement(Long.serializer(), message.link.msgForLink.senderID))),
-                                )
-                            )
-                        )
+        Box(modifier = Modifier
+            .background(colorScheme.secondaryContainer.copy(alpha = 0.6f), shape = RoundedCornerShape(8.dp)),
+            ) {
+            var joinText = ""
+            // shit code :roflan_ebalo:
 
-                        GlobalScope.launch {
-                            SocketManager.sendPacket(
-                                packet,
-                                { packet ->
-                                    println(packet.payload)
-                                    if (packet.payload is JsonObject) {
-                                        UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    val fromUserForward = users[message.link.msgForLink.senderID]?.firstName + " " + users[message.link.msgForLink.senderID]?.lastName
-
-                    val annotatedString = buildAnnotatedString {
-                        withStyle(style = SpanStyle(fontSize = 15.sp)) {
-                            append("Переслано от: ")
-                        }
-
-                        appendInlineContent(id = "avatar")
-
-                        withStyle(style = SpanStyle(fontSize = 15.sp)) {
-                            append(fromUserForward)
-                        }
-                    }
-                    val inlineContentMap = mutableMapOf<String, InlineTextContent>(
-
-                    )
-                    val placeholder = Placeholder(
-                        width = 30.sp,
-                        height = 30.sp,
-                        placeholderVerticalAlign = PlaceholderVerticalAlign.Center
-                    )
-
-                    inlineContentMap["avatar"] = InlineTextContent(placeholder) { _ ->
-                        if (users[message.link.msgForLink.senderID]?.avatarUrl?.isNotEmpty() == true) {
-                            AsyncImage(
-                                model = users[message.link.msgForLink.senderID]?.avatarUrl,
-                                contentDescription = "ChatIcon",
-                                modifier = Modifier
-                                    .width(30.dp)
-                                    .height(30.dp)
-                                    .clip(CircleShape)
-                                    .padding(start = 2.dp, end = 2.dp)
-                                    .fillMaxSize(),
-                                alignment = Alignment.Center
-                            )
-                        } else {
-                            val initial = fromUserForward.split(" ").mapNotNull { it.firstOrNull() }
-                                .take(2)
-                                .joinToString("")
-                                .uppercase(getDefault())
-
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .width(30.dp)
-                                    .height(30.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(
-                                                Utils.getColorForAvatar(fromUserForward).first,
-                                                Utils.getColorForAvatar(fromUserForward).second
-                                            )
+            if (event == "joinByLink") {
+                if (!users.containsKey(attach.jsonObject["userId"]?.jsonPrimitive?.long)) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            attach.jsonObject["userId"]?.jsonPrimitive?.long!!
                                         )
                                     )
-                                    .fillMaxSize()
-                                    .padding(start = 2.dp, end = 2.dp)
-                                ) {
-                                Text(
-                                    text = initial.toString(),
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                    }
-
-                    Text(
-                        annotatedString,
-                        inlineContent = inlineContentMap,
-                        fontSize = 15.sp,
-                        modifier = Modifier.padding(start = 4.dp, end = 2.dp)
-                    )
-                    if (message.link.msgForLink.attaches!!.jsonArray.isNotEmpty()) {
-                        DrawImages(message.link.msgForLink.attaches.jsonArray)
-                    }
-
-                    Text(
-                        message.link.msgForLink.message,
-                        fontSize = 24.sp,
-                        modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 16.dp)
-                    )
-                } else {
-                    if (message.attaches!!.jsonArray.isNotEmpty()) {
-                        DrawImages(message.attaches.jsonArray)
-                    }
-
-                    Text(
-                        message.message,
-                        fontSize = 24.sp,
-                        modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 16.dp)
-                    )
-                }
-            }
-
-            val instant = fromEpochMilliseconds(message.sendTime)
-            val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-            var minutezero: String = "0"
-
-            minutezero = if (localDateTime.minute < 10) {
-                "0" + localDateTime.minute.toString()
-            } else {
-                localDateTime.minute.toString()
-            }
-
-            val time = "${localDateTime.hour}:${minutezero}"
-
-            Row(
-                modifier = Modifier
-                    .padding(top = 20.dp, end = 4.dp)
-                    .align(Alignment.BottomEnd)
-            ) {
-                if (message.status == "EDITED") {
-                    Icon(
-                        Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
-                            .size(16.dp)
-                            .align(
-                                Alignment.Bottom
+                                ),
                             )
-                            .alpha(0.8f)
+                        )
                     )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
+
+
+                }
+                if (message.senderID == AccountManager.accountID) {
+                    joinText += "Вы присоединились к чату"
+                } else {
+                    userName = users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                    if (users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                        userName += " " + users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                    }
+                    joinText += "$username присоединился(-ась) к чату"
+                }
+            } else if (event == "add") {
+                val peoplesAdded = attach.jsonObject["userIds"]?.jsonArray
+
+                if (!users.containsKey(peoplesAdded?.last()?.jsonPrimitive?.long) && attach.jsonObject["userIds"]?.jsonArray?.isNotEmpty() == true) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            attach.jsonObject["userIds"]?.jsonArray?.last()?.jsonPrimitive?.long!!
+                                        )
+                                    )
+                                ),
+                            )
+                        )
+                    )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
                 }
 
-                Text(
-                    time,
-                    modifier = Modifier
-                        .align(
-                            Alignment.Bottom
+                if (!users.containsKey(message.senderID)) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            message.senderID
+                                        )
+                                    )
+                                ),
+                            )
                         )
-                        .alpha(0.8f),
-                )
+                    )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
+                }
+                var whomAdded = users[peoplesAdded?.last()?.jsonPrimitive?.long]?.firstName.toString()
+
+                if (users[peoplesAdded?.last()?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                    whomAdded += " " + users[peoplesAdded?.last()?.jsonPrimitive?.long]?.lastName
+                }
+                if (message.senderID == AccountManager.accountID) {
+                    joinText += "Вы добавили $whomAdded"
+                } else {
+                    var whoAdded = users[message.senderID]?.firstName.toString()
+
+                    if (users[message.senderID]?.firstName?.isNotEmpty() == true) {
+                        whoAdded += " " + users[message.senderID]?.lastName
+                    }
+
+                    joinText += "$whoAdded добавил(-а) $whomAdded"
+                }
+            } else if (event == "leave") {
+                if (!users.containsKey(message.senderID)) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            message.senderID
+                                        )
+                                    )
+                                ),
+                            )
+                        )
+                    )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
+                }
+
+
+                if (message.senderID == AccountManager.accountID) {
+                    joinText += "Вы покинули чат"
+                } else {
+                    userName = users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                    if (users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                        userName += " " + users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                    }
+                    joinText += "$username покинул(-а) чат"
+                }
+            } else if (event == "title") {
+                var userName = ""
+                if (!users.containsKey(message.senderID)) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            message.senderID
+                                        )
+                                    )
+                                ),
+                            )
+                        )
+                    )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (message.senderID == AccountManager.accountID) {
+                    username = "Вы"
+                    val newTitle = attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                    joinText += "$username изменили название чата на «$newTitle»"
+                } else {
+                    userName = users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                    if (users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                        userName += " " + users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                    }
+
+                    val newTitle = attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                    joinText += "$username изменил(-а) название чата на «$newTitle»"
+                }
+            } else if (event == "icon") {
+                var userName = ""
+                if (!users.containsKey(message.senderID)) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            message.senderID
+                                        )
+                                    )
+                                ),
+                            )
+                        )
+                    )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (message.senderID == AccountManager.accountID) {
+                    username = "Вы"
+                    val newTitle = attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                    joinText += "$username изменили фото чата"
+                } else {
+                    userName = users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                    if (users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                        userName += " " + users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                    }
+
+                    val newTitle = attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                    joinText += "$username изменил(-а) фото чата"
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(joinText)
+                    AsyncImage(
+                        model = attach.jsonObject["url"]!!.jsonPrimitive.content,
+                        contentDescription = "ChatIcon",
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .size(100.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            } else if (event == "new") {
+                var userName = ""
+                if (!users.containsKey(message.senderID)) {
+                    val packet = SocketManager.packPacket(
+                        OPCode.CONTACTS_INFO.opcode,
+                        JsonObject(
+                            mapOf(
+                                "contactIds" to JsonArray(
+                                    listOf(
+                                        Json.encodeToJsonElement(
+                                            Long.serializer(),
+                                            message.senderID
+                                        )
+                                    )
+                                ),
+                            )
+                        )
+                    )
+
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(
+                            packet,
+                            { packet ->
+                                println(packet.payload)
+                                if (packet.payload is JsonObject) {
+                                    UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
+                                }
+                            }
+                        )
+                    }
+                }
+                if (chatType != "CHANNEL") {
+                    if (message.senderID == AccountManager.accountID) {
+                        username = "Вы"
+
+                        joinText += "$username создали чат"
+                    } else {
+                        userName = users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                        if (users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                            userName += " " + users[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                        }
+
+                        joinText += "$username создал(-а) чат"
+                    }
+                } else {
+                    joinText += "Канал создан"
+                }
+            }
+            if (event != "icon") {
+                Text(joinText)
             }
         }
     }

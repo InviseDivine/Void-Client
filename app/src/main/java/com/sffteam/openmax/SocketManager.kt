@@ -71,6 +71,7 @@ enum class OPCode(val opcode: Int) {
     LAST_SEEN(35), // Used for obtain last seen of contacts
     CHAT_INFO(48),
     CHAT_MESSAGES(49),
+    JOIN_CHAT(57),
     SEND_MESSAGE(64),
     DELETE_MESSAGE(66),
     CHAT_SUBSCRIBE(75), // Idk
@@ -325,9 +326,6 @@ object SocketManager {
 
                 val buffer = ByteArray(8192)
                 val bytesRead = receiveChannel.readAvailable(buffer, 0, 8192)
-                if (bytesRead < 0) {
-                    socket.close()
-                }
                 println(bytesRead)
                 println(buffer.size)
 
