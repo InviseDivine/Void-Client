@@ -10,9 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,10 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -36,15 +31,18 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Reply
+import androidx.compose.material.icons.filled.SubdirectoryArrowLeft
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,12 +53,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableLongState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -85,20 +83,15 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.sffteam.openmax.ui.theme.AppTheme
-import com.sffteam.openmax.ui.theme.primaryContainerDark
-import com.sffteam.openmax.ui.theme.primaryDark
-import io.ktor.http.websocket.websocketServerAccept
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -110,17 +103,19 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import sh.calvin.autolinktext.rememberAutoLinkText
+import java.time.Duration
+import java.util.Date
 import java.util.Locale.getDefault
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 class ChatActivity : ComponentActivity() {
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-    @OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
+    @OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class, ExperimentalTime::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        println("joined to chat")
+
         val chatTitle: String = intent.getStringExtra("chatTitle").toString()
         val chatUrl: String = intent.getStringExtra("chatIcon").toString()
         val chatID: Long = intent.getLongExtra("chatID", 0L)
@@ -168,6 +163,7 @@ class ChatActivity : ComponentActivity() {
 
                 var removeforall by remember { mutableStateOf(false) }
 
+                var selectedMSGReply by remember { mutableLongStateOf(0L) }
                 var selectedMSGID by remember { mutableLongStateOf(0L) }
                 var showPopup by remember { mutableStateOf(false) }
 
@@ -180,7 +176,7 @@ class ChatActivity : ComponentActivity() {
                     topBar = {
                         TopAppBar(
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = colorScheme.surfaceDim,
+                                containerColor = colorScheme.surfaceContainer,
                                 titleContentColor = Color.White,
                                 navigationIconContentColor = Color.White,
                                 actionIconContentColor = Color.White
@@ -205,6 +201,23 @@ class ChatActivity : ComponentActivity() {
                                                 .height(50.dp)
                                                 .clip(CircleShape)
                                         )
+                                    }  else if (chatID == 0L) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .width(60.dp)
+                                                .height(60.dp)
+                                                .clip(CircleShape)
+                                                .background(colorScheme.primaryContainer),
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.Bookmark,
+                                                contentDescription = "edit message",
+                                                modifier = Modifier
+                                                    .size(30.dp)
+                                                    .align(Alignment.Center)
+                                            )
+                                        }
                                     } else {
                                         val initial = chatTitle.split(" ")
                                             .mapNotNull { it.firstOrNull()?.toChar() }
@@ -293,6 +306,7 @@ class ChatActivity : ComponentActivity() {
                                     }
                                 }
                             },
+
                         )
                     },
                     bottomBar = {
@@ -301,7 +315,7 @@ class ChatActivity : ComponentActivity() {
                                 if (type == "CHANNEL") {
                                     DrawBottomChannel(chatID)
                                 } else {
-                                    DrawBottomDialog(chatID, listState, coroutineScope)
+                                    DrawBottomDialog(chatID, selectedMSGReply, onValChange = { newVal -> selectedMSGReply = newVal})
                                 }
                             }
                         )
@@ -317,9 +331,7 @@ class ChatActivity : ComponentActivity() {
                                 println("visItems ${visibleItems[0].index}")
                                 println("visItems ${visibleItems.last().index}")
 
-                                if (visibleItems.last().index >= listSorted!!.size - 5 && chats[chatID]?.messages?.size?.rem(
-                                        30
-                                    ) == 0 && isUserScrolling) {
+                                if (visibleItems.last().index >= listSorted!!.size - 5 && chats[chatID]?.needGetMessages == true && isUserScrolling) {
 
                                     print("cool: ")
                                     println(listSorted)
@@ -329,10 +341,10 @@ class ChatActivity : ComponentActivity() {
                                             mapOf(
                                                 "chatId" to JsonPrimitive(chatID),
                                                 "from" to JsonPrimitive(
-                                                    listSorted?.last()?.value?.sendTime
+                                                    listSorted.last().value?.sendTime
                                                 ),
                                                 "forward" to JsonPrimitive(0),
-                                                "backward" to JsonPrimitive(31),
+                                                "backward" to JsonPrimitive(30),
                                                 "getMessages" to JsonPrimitive(true)
                                             )
                                         )
@@ -475,6 +487,7 @@ class ChatActivity : ComponentActivity() {
                                                 .align(Alignment.CenterVertically)
                                         )
                                     }
+
                                     Row(modifier = Modifier
                                         .clickable {
                                             showPopup = true
@@ -499,10 +512,27 @@ class ChatActivity : ComponentActivity() {
                                         )
                                     }
                                 }
+
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.Reply,
+                                        contentDescription = "reply on message",
+                                        modifier = Modifier
+                                            .padding(end = 10.dp)
+                                            .size(20.dp)
+                                            .align(Alignment.CenterVertically)
+                                    )
+
+                                    Text(
+                                        text = "Ответить",
+                                        fontSize = 25.sp,
+                                        modifier = Modifier
+                                            .align(Alignment.CenterVertically)
+                                    )
+                                }
                             }
                         }
                     }
-                    var prevMsg : Message
                     LazyColumn(
                         modifier = Modifier
                             .padding(it)
@@ -527,30 +557,66 @@ class ChatActivity : ComponentActivity() {
                             } else {
                                 Alignment.Start
                             }
+                            Column (verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                val prevMsg = if (index != sortedChats?.size?.minus(1)) sortedChats?.get(index + 1)?.second else Message()
+                                val duration = Duration.ofSeconds(message.second.sendTime / 1000 - (prevMsg?.sendTime?.div(
+                                    1000
+                                ) ?: 0))
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        showBottomSheet = true
-                                        selectedMSGID = message.first.toLong()
-                                    },
-                                horizontalArrangement = Arrangement.spacedBy(
-                                    16.dp,
-                                    horizontal
-                                ),
-                            ) {
-                                DrawMessage(message.second, type,
-                                    if (index != sortedChats?.size?.minus(1)) sortedChats?.get(index + 1)?.second ?: Message() else Message(),
-                                    if (index > 0) sortedChats?.get(index - 1)?.second ?: Message() else Message()
-                                )
+                                val instantLast = fromEpochMilliseconds(message.second.sendTime)
+                                val instantPrev = fromEpochMilliseconds(prevMsg?.sendTime!!)
+
+                                val localDateTimeLastPrev = instantPrev.toLocalDateTime(TimeZone.currentSystemDefault())
+                                val localDateTimeLast = instantLast.toLocalDateTime(TimeZone.currentSystemDefault())
+
+
+                                println("${duration.toHours()} sh1t")
+                                if (localDateTimeLastPrev.date != localDateTimeLast.date) {
+                                    val currentTime = Date().time
+
+                                    val durCool = Duration.ofSeconds(currentTime / 1000 - message.second.sendTime / 1000)
+                                    val instantLast = fromEpochMilliseconds(message.second.sendTime)
+
+                                    val text = if (durCool.toHours() < 24) {
+                                        "Сегодня"
+                                    } else if (durCool.toHours() in 24..<48) {
+                                        "Вчера"
+                                    } else {
+                                        "${localDateTimeLast.day}.${localDateTimeLast.month.number}.${localDateTimeLast.year}"
+                                    }
+                                    Box(modifier = Modifier
+                                        .align(Alignment.CenterHorizontally)
+                                        .background(colorScheme.secondaryContainer.copy(alpha = 0.6f), shape = RoundedCornerShape(14.dp)),
+                                    ) {
+                                        Text(
+                                            text,
+                                            modifier = Modifier.padding(bottom = 3.dp, start = 6.dp, end = 6.dp)
+                                        )
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            showBottomSheet = true
+                                            selectedMSGID = message.first.toLong()
+                                        },
+                                    horizontalArrangement = Arrangement.spacedBy(
+                                        16.dp,
+                                        horizontal
+                                    ),
+                                ) {
+                                    DrawMessage(message.second, type,
+                                        if (index != sortedChats?.size?.minus(1)) sortedChats?.get(index + 1)?.second ?: Message() else Message(),
+                                        if (index > 0) sortedChats?.get(index - 1)?.second ?: Message() else Message()
+                                    )
+                                }
                             }
                         }
                     }
                     val isAtBottom by remember {
                         derivedStateOf {
                             val visibleItems = listState.layoutInfo.visibleItemsInfo
-                            val totalItems = listState.layoutInfo.totalItemsCount
 
                             visibleItems.isNotEmpty() &&
                                     visibleItems.first().index < 5
@@ -584,13 +650,15 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
     if (users[message.senderID]?.lastName?.isNotEmpty() == true) {
         username += " " + users[message.senderID]?.lastName
     }
+
     if (!(message.attaches?.jsonArray?.isNotEmpty() == true && message.attaches.jsonArray.last().jsonObject.contains(
             "event"
         ))
     ) {
         Row(
             modifier = Modifier.padding(
-                start = if (chatType != "CHAT" || (message.senderID != AccountManager.accountID && nextMessage.senderID != message.senderID)) 0.dp else 49.dp,
+                start = if (chatType != "CHAT" || (message.senderID != AccountManager.accountID && nextMessage.senderID != message.senderID)) 6.dp else 55.dp,
+                end = 6.dp
             ), horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.Start)
         ) {
             if (chatType == "CHAT" && message.senderID != AccountManager.accountID && nextMessage.senderID != message.senderID) {
@@ -680,9 +748,10 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
                 Column {
                     if (chatType == "CHAT" && message.senderID != AccountManager.accountID && previousMessage.senderID != message.senderID) {
                         Text(
-                            username.toString(),    
-                            fontSize = 17.sp,
-                            modifier = Modifier.padding(start = 6.dp, end = 2.dp)
+                            username.toString(),
+                            color = Utils.getColorForNickname(username.toString()),
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(start = 4.dp, end = 2.dp)
                         )
                     }
                     if (message.link.type.isNotEmpty() && message.link.type == "FORWARD") {
@@ -724,7 +793,7 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
                             }
 
                             appendInlineContent(id = "avatar")
-
+                            append(" ")
                             withStyle(style = SpanStyle(fontSize = 15.sp)) {
                                 append(fromUserForward)
                             }
@@ -892,16 +961,17 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
                 Row(
                     modifier = Modifier
                         .padding(top = 20.dp, end = 4.dp)
-                        .align(Alignment.BottomEnd)
+                        .align(Alignment.BottomEnd),
                 ) {
                     if (message.status == "EDITED") {
                         Icon(
                             Icons.Filled.Edit, contentDescription = "add", modifier = Modifier
-                                .size(16.dp)
+                                .size(15.dp)
                                 .align(
-                                    Alignment.Bottom
+                                    Alignment.CenterVertically
                                 )
                                 .alpha(0.8f)
+                                .padding(end = 2.dp)
                         )
                     }
 
@@ -909,7 +979,7 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
                         time,
                         modifier = Modifier
                             .align(
-                                Alignment.Bottom
+                                Alignment.CenterVertically
                             )
                             .alpha(0.8f),
                     )
@@ -923,7 +993,8 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
         var userName = ""
 
         Box(modifier = Modifier
-            .background(colorScheme.secondaryContainer.copy(alpha = 0.6f), shape = RoundedCornerShape(8.dp)),
+            .background(colorScheme.secondaryContainer.copy(alpha = 0.6f), shape = RoundedCornerShape(14.dp))
+            .padding(bottom = 3.dp, start = 6.dp, end = 6.dp),
             ) {
             var joinText = ""
             // shit code :roflan_ebalo:
@@ -1256,84 +1327,104 @@ fun DrawMessage(message: Message, chatType : String, previousMessage : Message, 
 
 @OptIn(DelicateCoroutinesApi::class)
 @Composable
-fun DrawBottomDialog(chatID: Long, listState: LazyListState, coroutineScope: CoroutineScope) {
+fun DrawBottomDialog(chatID: Long, selectedMessage: Long, onValChange: (Long) -> Unit) {
     var message by remember { mutableStateOf("") }
 
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        IconButton(onClick = {}) {
-            Icon(Icons.Filled.Add, contentDescription = "add")
-        }
-        OutlinedTextField(
-            modifier = Modifier.weight(1f),
-            value = message,
-            onValueChange = { newText ->
-                message = newText
-            },
-            placeholder = { Text("Сообщение")},
-        )
+    Column() {
+        // Can message be with id == 0? :thinking:
+        if (selectedMessage != 0L) {
+            val chats by ChatManager.chatsList.collectAsState()
 
-        IconButton(onClick = {
-            println(message)
-            if (message.isNotEmpty()) {
-                val packet = SocketManager.packPacket(OPCode.SEND_MESSAGE.opcode,
-                    JsonObject(
-                        mapOf(
-                            "chatId" to JsonPrimitive(chatID),
-                            "message" to JsonObject(
-                                mapOf(
-                                    "text" to JsonPrimitive(message),
-                                    "cid" to JsonPrimitive(System.currentTimeMillis()),
-                                    "elements" to JsonArray(emptyList()),
-                                    "attaches" to JsonArray(emptyList())
-                                )
-                            ),
-                            "notify" to JsonPrimitive(true)
-                        )
-                    ))
-                GlobalScope.launch {
-                    SocketManager.sendPacket(packet,
-                        { packet ->
-                            println(packet.payload)
-                            println("msg should be added")
-                            if (packet.payload is JsonObject) {
-                                println("msg should be added")
-                                var msgID = ""
-                                var msg = Message("", 0L, 0L, JsonArray(emptyList()), "")
-                                try {
-                                    var status = ""
-                                    try {
-                                        status = ""
-                                    } catch (e: Exception) {
+            Row() {
+                Icon(
+                    Icons.Filled.SubdirectoryArrowLeft,
+                    contentDescription = "edit message",
+                    modifier = Modifier
+                        .size(30.dp)
+                )
 
-                                    }
-                                    msg = Message(
-                                        packet.payload["message"]?.jsonObject["text"]!!.jsonPrimitive.content,
-                                        packet.payload["message"]?.jsonObject["time"]!!.jsonPrimitive.long,
-                                        packet.payload["message"]?.jsonObject["sender"]!!.jsonPrimitive.long,
-                                        packet.payload["message"]?.jsonObject["attaches"]!!.jsonArray,
-                                        status,
-                                    )
+                val message = chats[chatID]?.messages[selectedMessage.toString()]
 
-                                    msgID =
-                                        packet.payload["message"]?.jsonObject["id"]!!.jsonPrimitive.content
-                                } catch (e: Exception) {
-                                    println(e)
-                                }
 
-                                println(msg)
-                                ChatManager.addMessage(msgID, msg, chatID)
-
-                            }
-                        }
-                    )
-                }
             }
+        }
 
-            message = ""
-        }) {
-            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "send")
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            IconButton(onClick = {}) {
+                Icon(Icons.Filled.Add, contentDescription = "add")
+            }
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                value = message,
+                onValueChange = { newText ->
+                    message = newText
+                },
+                placeholder = { Text("Сообщение")},
+            )
+
+            IconButton(onClick = {
+                println(message)
+                if (message.isNotEmpty()) {
+                    val packet = SocketManager.packPacket(OPCode.SEND_MESSAGE.opcode,
+                        JsonObject(
+                            mapOf(
+                                "chatId" to JsonPrimitive(chatID),
+                                "message" to JsonObject(
+                                    mapOf(
+                                        "text" to JsonPrimitive(message),
+                                        "cid" to JsonPrimitive(System.currentTimeMillis()),
+                                        "elements" to JsonArray(emptyList()),
+                                        "attaches" to JsonArray(emptyList())
+                                    )
+                                ),
+                                "notify" to JsonPrimitive(true)
+                            )
+                        ))
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(packet,
+                            { packet ->
+                                println(packet.payload)
+                                println("msg should be added")
+                                if (packet.payload is JsonObject) {
+                                    println("msg should be added")
+                                    var msgID = ""
+                                    var msg = Message("", 0L, 0L, JsonArray(emptyList()), "")
+                                    try {
+                                        var status = ""
+                                        try {
+                                            status = ""
+                                        } catch (e: Exception) {
+
+                                        }
+                                        msg = Message(
+                                            packet.payload["message"]?.jsonObject["text"]!!.jsonPrimitive.content,
+                                            packet.payload["message"]?.jsonObject["time"]!!.jsonPrimitive.long,
+                                            packet.payload["message"]?.jsonObject["sender"]!!.jsonPrimitive.long,
+                                            packet.payload["message"]?.jsonObject["attaches"]!!.jsonArray,
+                                            status,
+                                        )
+
+                                        msgID =
+                                            packet.payload["message"]?.jsonObject["id"]!!.jsonPrimitive.content
+                                    } catch (e: Exception) {
+                                        println(e)
+                                    }
+
+                                    println(msg)
+                                    ChatManager.addMessage(msgID, msg, chatID)
+
+                                }
+                            }
+                        )
+                    }
+                }
+
+                message = ""
+            }) {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "send")
+            }
         }
     }
 }

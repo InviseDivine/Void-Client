@@ -1,5 +1,6 @@
 package com.sffteam.openmax
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -27,6 +30,7 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -43,6 +47,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -80,6 +86,13 @@ import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
+import kotlinx.datetime.toJavaDayOfWeek
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -90,10 +103,18 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import java.time.DayOfWeek
+import java.util.Date
 import java.util.Locale.getDefault
 import kotlin.collections.contains
 import kotlin.collections.get
 import kotlin.collections.iterator
+import java.time.Duration
+import java.time.format.TextStyle
+import java.util.Locale
+import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
 class ChatListActivity : ComponentActivity() {
     @OptIn(DelicateCoroutinesApi::class, ExperimentalMaterial3WindowSizeClassApi::class)
@@ -110,6 +131,7 @@ class ChatListActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
 @Composable
 fun DrawChatList() {
@@ -232,37 +254,6 @@ fun DrawChatList() {
             else -> 24.sp
         }
 
-        CenterAlignedTopAppBar(
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = colorScheme.surfaceDim,
-                titleContentColor = Color.White,
-                navigationIconContentColor = Color.White,
-                actionIconContentColor = Color.White
-            ),
-            title = {
-                Text(
-                    "Open MAX",
-                    fontSize = titleSize,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
-                IconButton({ }) {
-                    Icon(
-                        Icons.Filled.Settings,
-                        contentDescription = "Меню"
-                    )
-                }
-            },
-            actions = {
-                IconButton({ showBottomSheet = true }) { Icon(Icons.Filled.Add, contentDescription = "Добавить чат") }
-                IconButton({ }) { Icon(Icons.Filled.Search, contentDescription = "Поиск") }
-            },
-            modifier = Modifier.heightIn(max = 200.dp)
-
-        )
-
         val chats by ChatManager.chatsList.collectAsState()
 
         val listState = rememberLazyListState()
@@ -274,22 +265,56 @@ fun DrawChatList() {
             }
         }
 
-        LazyColumn(reverseLayout = true, state = listState) {
-            items(
-                chats.entries.toList()
-                    .sortedBy {  (_, value) ->
-                        value.messages.entries.toList()
-                            .maxByOrNull { (_, value) -> value.sendTime }!!.value.sendTime }, key = { entry ->
-                                entry.key
-                            }
-            ) { entry ->
-                println(entry)
-                DrawUser(entry.key, entry.value, LocalContext.current, Modifier.weight(0.5f))
+        Scaffold(topBar = {
+            CenterAlignedTopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorScheme.surfaceContainer,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                ),
+                title = {
+                    Text(
+                        "Open MAX",
+                        fontSize = titleSize,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton({ }) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = "Меню"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton({ showBottomSheet = true }) { Icon(Icons.Filled.Add, contentDescription = "Добавить чат") }
+                    IconButton({ }) { Icon(Icons.Filled.Search, contentDescription = "Поиск") }
+                },
+                modifier = Modifier.heightIn(max = 200.dp)
+
+            )
+        }) {
+            LazyColumn(reverseLayout = true, state = listState, modifier = Modifier.padding(it)) {
+                items(
+                    chats.entries.toList()
+                        .sortedBy {  (_, value) ->
+                            value.messages.entries.toList()
+                                .maxByOrNull { (_, value) -> value.sendTime }!!.value.sendTime }, key = { entry ->
+                        entry.key
+                    }
+                ) { entry ->
+                    println(entry)
+                    DrawUser(entry.key, entry.value, LocalContext.current, Modifier.weight(0.5f))
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
     var chatTitle: String
@@ -364,6 +389,23 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
                         .height(60.dp)
                         .clip(CircleShape)
                 )
+            } else if (chatID == 0L)  {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(60.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.primaryContainer),
+                    ) {
+                    Icon(
+                        Icons.Filled.Bookmark,
+                        contentDescription = "edit message",
+                        modifier = Modifier
+                            .size(30.dp)
+                            .align(Alignment.Center)
+                    )
+                }
             } else {
                 val initial = chatTitle.split(" ").mapNotNull { it.firstOrNull() }
                     .take(2)
@@ -418,13 +460,56 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
             }
 
             Column() {
-                Text(
-                    chatTitle,
-                    fontSize = fontTitleSize,
-                    textAlign = TextAlign.Start,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    val lastMessageTime = sortedMessages.last().value.sendTime
+                    val currentTime = Date().time
+
+                    val instantLast = fromEpochMilliseconds(lastMessageTime)
+                    val instantCurrent = fromEpochMilliseconds(currentTime)
+
+                    val duration = Duration.ofSeconds(currentTime / 1000 - lastMessageTime / 1000)
+
+                    val localDateTime = instantLast.toLocalDateTime(TimeZone.currentSystemDefault())
+
+                    val hours = if (localDateTime.hour < 10) {
+                        "0${localDateTime.hour}"
+                    } else {
+                        localDateTime.hour
+                    }
+
+                    val minutes = if (localDateTime.minute < 10) {
+                        "0${localDateTime.minute}"
+                    } else {
+                        localDateTime.minute
+                    }
+
+                    val dayOfWeek = localDateTime.dayOfWeek.toJavaDayOfWeek().getDisplayName(
+                        TextStyle.SHORT, getDefault()
+                    )
+
+                    val time = if (duration.toHours() < 24) {
+                        "${hours}:${minutes}"
+                    } else if (duration.toHours() >= 24 && duration.toDays() < 7) {
+                        dayOfWeek.toString().replaceFirstChar { it.titlecase(getDefault()) }
+                    } else {
+                        "${localDateTime.day}.${localDateTime.month.number}.${localDateTime.year}"
+                    }
+
+                    Text(
+                        chatTitle,
+                        fontSize = fontTitleSize,
+                        textAlign = TextAlign.Start,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = time,
+                        fontSize = 16.sp,
+                        modifier = Modifier.alpha(0.7f)
+                    )
+                }
+
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

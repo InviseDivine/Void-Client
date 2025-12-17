@@ -19,4 +19,20 @@ object Utils {
 
         return colors[index]
     }
+
+    fun getColorForNickname(nickName : String) : Color {
+        val colors = listOf(
+                Color(0xFFFF2B4B),
+                Color(0xFFF8C324),
+                Color(0xFFFD903C),
+                Color(0xFF2196F3),
+                Color(0xFF2BFF47),
+                Color(0xFFE139FF),
+                Color(0xFF41E0D2),
+                Color(0xFF7826FC),
+            )
+        val index = (nickName.hashCode().absoluteValue) % colors.size
+
+        return colors[index]
+    }
 }

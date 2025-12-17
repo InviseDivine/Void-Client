@@ -46,6 +46,7 @@ data class Chat(
     val type: String,
     val users: Map<Long, Long>,
     val usersCount: Int,
+    val needGetMessages : Boolean = false
 )
 
 object ChatManager {
@@ -60,7 +61,8 @@ object ChatManager {
                 oldMap[chatID]?.messages?.minus(messageID) ?: emptyMap(),
                 oldMap[chatID]?.type ?: "",
                 oldMap[chatID]?.users ?: emptyMap(),
-                oldMap[chatID]?.usersCount ?: 0
+                oldMap[chatID]?.usersCount ?: 0,
+                oldMap[chatID]?.needGetMessages ?: false
             ))
         }
     }
@@ -76,6 +78,7 @@ object ChatManager {
                     oldMap[chatID]?.type ?: "",
                     oldMap[chatID]?.users ?: emptyMap(),
                     oldMap[chatID]?.usersCount ?: 0,
+                    oldMap[chatID]?.needGetMessages ?: false
                 ))
             }
         } catch (e: Exception) {
@@ -179,7 +182,8 @@ object ChatManager {
                 oldMap[chatID]?.messages?.plus(msgList) ?: emptyMap(),
                 oldMap[chatID]?.type ?: "",
                 oldMap[chatID]?.users ?: emptyMap(),
-                oldMap[chatID]?.usersCount ?: 0
+                oldMap[chatID]?.usersCount ?: 0,
+                if (msgList.size == 30) true else false
             ))
         }
         println(_chatsList.value[chatID]?.messages?.size)
@@ -288,11 +292,6 @@ object ChatManager {
                         println(e)
                         println("2msg")
                     }
-                } else {
-                    if (chatID == 0L) {
-                        avatarUrl =
-                            "https://web.max.ru/_app/immutable/assets/saved-dialog-icon.D35TSfgc.webp"
-                    }
                 }
 
                 if (i.jsonObject.contains("title")) {
@@ -345,7 +344,7 @@ object ChatManager {
                         messages,
                         type,
                         users,
-                        usersCount
+                        usersCount,
                     )
                 )
 
@@ -355,9 +354,6 @@ object ChatManager {
             } catch (e: Exception) {
                 println(e)
             }
-
-            println(_chatsList.value.toMap())
-            println("processing")
         }
 
         val userIds = mutableListOf<JsonElement>()
