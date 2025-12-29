@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.absoluteValue
 
 object Utils {
-    lateinit var windowSize : WindowSizeClass
+    lateinit var windowSize: WindowSizeClass
     fun getColorForAvatar(avatar: String): Pair<Color, Color> {
         val colors = listOf(
             Pair(Color(0xFFFF0026), Color(0xFFFF00BB)),
@@ -20,17 +20,17 @@ object Utils {
         return colors[index]
     }
 
-    fun getColorForNickname(nickName : String) : Color {
+    fun getColorForNickname(nickName: String): Color {
         val colors = listOf(
-                Color(0xFFFF2B4B),
-                Color(0xFFF8C324),
-                Color(0xFFFD903C),
-                Color(0xFF2196F3),
-                Color(0xFF2BFF47),
-                Color(0xFFE139FF),
-                Color(0xFF41E0D2),
-                Color(0xFF7826FC),
-            )
+            Color(0xFFFF2B4B),
+            Color(0xFFF8C324),
+            Color(0xFFFD903C),
+            Color(0xFF2196F3),
+            Color(0xFF2BFF47),
+            Color(0xFFE139FF),
+            Color(0xFF41E0D2),
+            Color(0xFF7826FC),
+        )
         val index = (nickName.hashCode().absoluteValue) % colors.size
 
         return colors[index]

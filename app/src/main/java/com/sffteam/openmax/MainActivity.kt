@@ -11,11 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,11 +56,6 @@ class MainActivity : ComponentActivity() {
         }
 
         val context = this
-
-        runBlocking {
-            val exampleData = dataStore.data.first()
-            AccountManager.token = exampleData[stringPreferencesKey("token")].toString()
-        }
 
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
@@ -106,9 +101,7 @@ class MainActivity : ComponentActivity() {
                     )
 
                     Text(
-                        errorText.value,
-                        color = Color.White,
-                        fontSize = 18.sp
+                        errorText.value, color = Color.White, fontSize = 18.sp
                     )
 
                     Row(
@@ -122,17 +115,18 @@ class MainActivity : ComponentActivity() {
                             },
                             label = { Text("Номер телефона") },
                             textStyle = TextStyle(fontSize = 25.sp),
-                            modifier = Modifier.padding(bottom = 3.dp)
+                            modifier = Modifier.padding(bottom = 3.dp),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                            )
                         )
                     }
 
                     val context = LocalContext.current
                     Button(
-                        modifier = Modifier.padding(16.dp),
-                        onClick = {
+                        modifier = Modifier.padding(16.dp), onClick = {
                             val packet = SocketManager.packPacket(
-                                OPCode.START_AUTH.opcode,
-                                JsonObject(
+                                OPCode.START_AUTH.opcode, JsonObject(
                                     mapOf(
                                         "phone" to JsonPrimitive(phone.value),
                                         "type" to JsonPrimitive("START_AUTH"),
@@ -143,8 +137,7 @@ class MainActivity : ComponentActivity() {
 
                             GlobalScope.launch {
                                 SocketManager.sendPacket(
-                                    packet,
-                                    { packet ->
+                                    packet, { packet ->
                                         println(packet.payload)
                                         if (packet.payload is JsonObject) {
                                             if ("error" in packet.payload) {
@@ -165,11 +158,9 @@ class MainActivity : ComponentActivity() {
                                                 println("wtf")
                                             }
                                         }
-                                    }
-                                )
+                                    })
                             }
-                        }
-                    ) {
+                        }) {
                         Text("Продолжить", fontSize = 25.sp)
                     }
                 }

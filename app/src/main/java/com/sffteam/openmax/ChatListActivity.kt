@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -29,18 +27,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +42,6 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -70,7 +63,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.Placeholder
@@ -82,19 +74,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.sffteam.openmax.preferences.SettingsActivity
 import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toJavaDayOfWeek
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -103,16 +91,11 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import java.time.DayOfWeek
-import java.util.Date
-import java.util.Locale.getDefault
-import kotlin.collections.contains
-import kotlin.collections.get
-import kotlin.collections.iterator
 import java.time.Duration
 import java.time.format.TextStyle
-import java.util.Locale
-import kotlin.time.DurationUnit
+import java.util.Date
+import java.util.Locale.getDefault
+import kotlin.collections.get
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
@@ -143,88 +126,83 @@ fun DrawChatList() {
         var inputText by remember { mutableStateOf("") }
         var errorText by remember { mutableStateOf("") }
 
-        AlertDialog(
-            title = {
-                Text(text = "Войти в группу")
-            },
-            text = {
-                Column() {
-                    OutlinedTextField(
-                        value = inputText,
-                        onValueChange = { inputText = it },
-                        label = { Text("Введите ссылку на группу") },
-                        singleLine = true
-                    )
+        AlertDialog(title = {
+            Text(text = "Войти в группу")
+        }, text = {
+            Column() {
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    label = { Text("Введите ссылку на группу") },
+                    singleLine = true
+                )
 
-                    Text(
-                        errorText
-                    )
-                }
+                Text(
+                    errorText
+                )
+            }
 
-            },
-            onDismissRequest = {
-                showPopup = false
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val urlJoin = inputText.replace("https://max.ru/", "")
-                        val packetSend = SocketManager.packPacket(OPCode.JOIN_CHAT.opcode, JsonObject(mapOf(
-                                    "link" to JsonPrimitive(urlJoin)
-                                )
+        }, onDismissRequest = {
+            showPopup = false
+        }, confirmButton = {
+            TextButton(
+                onClick = {
+                    val urlJoin = inputText.replace("https://max.ru/", "")
+                    val packetSend = SocketManager.packPacket(
+                        OPCode.JOIN_CHAT.opcode, JsonObject(
+                            mapOf(
+                                "link" to JsonPrimitive(urlJoin)
                             )
                         )
+                    )
 
-                        GlobalScope.launch {
-                            SocketManager.sendPacket(packetSend, callback = { packet ->
-                                    if (packet.payload is JsonObject) {
-                                        if ("error" in packet.payload) {
-                                            errorText = packet.payload["localizedMessage"].toString()
-                                        } else {
-                                            GlobalScope.launch {
-                                                ChatManager.processChats(JsonArray(listOf(packet.payload["chat"]?.jsonObject) as List<JsonElement>))
-                                            }
-
-                                            showPopup = false
-                                            showBottomSheet = false
-                                        }
+                    GlobalScope.launch {
+                        SocketManager.sendPacket(packetSend, callback = { packet ->
+                            if (packet.payload is JsonObject) {
+                                if ("error" in packet.payload) {
+                                    errorText = packet.payload["localizedMessage"].toString()
+                                } else {
+                                    GlobalScope.launch {
+                                        ChatManager.processChats(JsonArray(listOf(packet.payload["chat"]?.jsonObject) as List<JsonElement>))
                                     }
+
+                                    showPopup = false
+                                    showBottomSheet = false
                                 }
-                            )
-                        }
+                            }
+                        })
+                    }
 
 
-                    }
-                ) {
-                    Text("Войти", fontSize = 20.sp)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showPopup = false
-                    }
-                ) {
-                    Text("Отмена", fontSize = 20.sp)
-                }
+                }) {
+                Text("Войти", fontSize = 20.sp)
             }
-        )
+        }, dismissButton = {
+            TextButton(
+                onClick = {
+                    showPopup = false
+                }) {
+                Text("Отмена", fontSize = 20.sp)
+            }
+        })
     }
 
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = {
                 showBottomSheet = false
-            },
-            sheetState = sheetState
+            }, sheetState = sheetState
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(start = 8.dp)
             ) {
-                Row(modifier = Modifier.fillMaxWidth().clickable {
-                    showPopup = true
-                }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showPopup = true
+                        }) {
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = "edit message",
@@ -238,8 +216,7 @@ fun DrawChatList() {
                     Text(
                         text = "Войти в группу",
                         fontSize = 25.sp,
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
+                        modifier = Modifier.align(Alignment.CenterVertically)
                     )
                 }
             }
@@ -259,6 +236,7 @@ fun DrawChatList() {
         val listState = rememberLazyListState()
         val coroutineScope = rememberCoroutineScope()
 
+        val context = LocalContext.current
         LaunchedEffect(chats) {
             coroutineScope.launch {
                 listState.scrollToItem(index = chats.size)
@@ -268,44 +246,45 @@ fun DrawChatList() {
         Scaffold(topBar = {
             CenterAlignedTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorScheme.surfaceContainer,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White,
-                    actionIconContentColor = Color.White
-                ),
-                title = {
-                    Text(
-                        "Open MAX",
-                        fontSize = titleSize,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
+                containerColor = colorScheme.surfaceContainer,
+                titleContentColor = Color.White,
+                navigationIconContentColor = Color.White,
+                actionIconContentColor = Color.White
+            ), title = {
+                Text(
+                    "Open MAX",
+                    fontSize = titleSize,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
+            }, navigationIcon = {
+                IconButton({
+                    val intent = Intent(context, SettingsActivity::class.java)
+
+                    context.startActivity(intent)
+                }) {
+                    Icon(
+                        Icons.Filled.Settings, contentDescription = "Меню"
                     )
-                },
-                navigationIcon = {
-                    IconButton({ }) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = "Меню"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton({ showBottomSheet = true }) { Icon(Icons.Filled.Add, contentDescription = "Добавить чат") }
-                    IconButton({ }) { Icon(Icons.Filled.Search, contentDescription = "Поиск") }
-                },
-                modifier = Modifier.heightIn(max = 200.dp)
+                }
+            }, actions = {
+                IconButton({ showBottomSheet = true }) {
+                    Icon(
+                        Icons.Filled.Add, contentDescription = "Добавить чат"
+                    )
+                }
+                IconButton({ }) { Icon(Icons.Filled.Search, contentDescription = "Поиск") }
+            }, modifier = Modifier.heightIn(max = 200.dp)
 
             )
         }) {
             LazyColumn(reverseLayout = true, state = listState, modifier = Modifier.padding(it)) {
-                items(
-                    chats.entries.toList()
-                        .sortedBy {  (_, value) ->
-                            value.messages.entries.toList()
-                                .maxByOrNull { (_, value) -> value.sendTime }!!.value.sendTime }, key = { entry ->
-                        entry.key
-                    }
-                ) { entry ->
+                items(chats.entries.toList().sortedBy { (_, value) ->
+                        value.messages.entries.toList()
+                            .maxByOrNull { (_, value) -> value.sendTime }!!.value.sendTime
+                    }, key = { entry ->
+                    entry.key
+                }) { entry ->
                     println(entry)
                     DrawUser(entry.key, entry.value, LocalContext.current, Modifier.weight(0.5f))
                 }
@@ -316,13 +295,14 @@ fun DrawChatList() {
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
+fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
     var chatTitle: String
     var chatIcon: String
     val users = UserManager.usersList.collectAsState()
     var secondUser = 0L
-    val sortedMessages = chat.messages.entries.toList()
-        .sortedBy { (_, value) -> value.sendTime }
+    val sortedMessages = chat.messages.entries.toList().sortedBy { (_, value) -> value.sendTime }
+
+    val lastMessage = sortedMessages.last().value
 
     if (chat.type == "DIALOG" && chatID != 0L) {
         for (i in chat.users.toList()) {
@@ -340,26 +320,24 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
         chatIcon = chat.avatarUrl
     }
 
-    Button(
-        shape = RectangleShape,
-        onClick = {
-            val intent = Intent(context, ChatActivity::class.java)
-            intent.putExtra("chatTitle", chatTitle)
-            intent.putExtra("chatIcon", chatIcon)
-            intent.putExtra("chatID", chatID)
-            intent.putExtra("messageTime", chat.messages.toList().last().second.sendTime)
-            intent.putExtra("chatType", chat.type)
-
-            context.startActivity(intent)
-        },
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = Color.White
-        ),
+    Box(
+        // shape = RectangleShape,
         modifier = modifier
             .height(80.dp)
             .fillMaxWidth()
-    ) {
+            .clickable {
+                val intent = Intent(context, ChatActivity::class.java)
+                intent.putExtra("chatTitle", chatTitle)
+                intent.putExtra("chatIcon", chatIcon)
+                intent.putExtra("chatID", chatID)
+                intent.putExtra("messageTime", lastMessage.sendTime)
+                intent.putExtra("chatType", chat.type)
+
+                context.startActivity(intent)
+            }
+            .background(Color.Transparent)
+            .padding(start = 12.dp, end = 16.dp),
+        contentAlignment = Alignment.Center) {
         val fontTitleSize = when (Utils.windowSize.widthSizeClass) {
             WindowWidthSizeClass.Compact -> 20.sp
             WindowWidthSizeClass.Medium -> 24.sp
@@ -375,9 +353,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
 
             if (chatIcon.isNotEmpty()) {
@@ -389,7 +365,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
                         .height(60.dp)
                         .clip(CircleShape)
                 )
-            } else if (chatID == 0L)  {
+            } else if (chatID == 0L) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -397,7 +373,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
                         .height(60.dp)
                         .clip(CircleShape)
                         .background(colorScheme.primaryContainer),
-                    ) {
+                ) {
                     Icon(
                         Icons.Filled.Bookmark,
                         contentDescription = "edit message",
@@ -407,10 +383,9 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
                     )
                 }
             } else {
-                val initial = chatTitle.split(" ").mapNotNull { it.firstOrNull() }
-                    .take(2)
-                    .joinToString("")
-                    .uppercase(getDefault())
+                val initial =
+                    chatTitle.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString("")
+                        .uppercase(getDefault())
 
                 Box(
                     contentAlignment = Alignment.Center,
@@ -437,35 +412,12 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
                 }
             }
 
-            var lastMsgUser = ""
-
-            if (chat.type == "CHAT") {
-                if (sortedMessages.last().value.senderID == AccountManager.accountID) {
-                    lastMsgUser = "Вы: "
-                } else {
-                    lastMsgUser = users.value[sortedMessages.last().value.senderID]?.firstName.toString()
-
-                    if (users.value[sortedMessages.last().value.senderID]?.lastName?.isNotEmpty() ?: false
-                    ) {
-                        lastMsgUser += " " + users.value[sortedMessages.last().value.senderID]?.lastName
-                    }
-
-                    lastMsgUser += ": "
-                }
-            }
-            val lastMSGCleared = if(sortedMessages.last().value.link.type.isNotEmpty()) {
-                sortedMessages.last().value.link.msgForLink.message.replace("\n", " ")
-            } else {
-                sortedMessages.last().value.message.replace("\n", " ")
-            }
-
             Column() {
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    val lastMessageTime = sortedMessages.last().value.sendTime
+                    val lastMessageTime = lastMessage.sendTime
                     val currentTime = Date().time
 
                     val instantLast = fromEpochMilliseconds(lastMessageTime)
-                    val instantCurrent = fromEpochMilliseconds(currentTime)
 
                     val duration = Duration.ofSeconds(currentTime / 1000 - lastMessageTime / 1000)
 
@@ -500,77 +452,345 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier : Modifier) {
                         fontSize = fontTitleSize,
                         textAlign = TextAlign.Start,
                         overflow = TextOverflow.Ellipsis,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(0.45f)
+                            .padding(end = 4.dp)
                     )
-                    Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = time,
-                        fontSize = 16.sp,
-                        modifier = Modifier.alpha(0.7f)
+                        text = time, fontSize = 16.sp, modifier = Modifier.alpha(0.7f)
                     )
                 }
-
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    val annotatedString = buildAnnotatedString {
+                    if (!(lastMessage.attaches?.jsonArray?.isNotEmpty() == true && lastMessage.attaches.jsonArray?.last()?.jsonObject?.contains(
+                            "event"
+                        ) == true)
+                    ) {
+                        var lastMsgUser = ""
+
+                        if (chat.type == "CHAT") {
+                            if (lastMessage.senderID == AccountManager.accountID) {
+                                lastMsgUser = "Вы: "
+                            } else {
+                                lastMsgUser =
+                                    users.value[lastMessage.senderID]?.firstName.toString()
+
+                                if (users.value[lastMessage.senderID]?.lastName?.isNotEmpty()
+                                        ?: false
+                                ) {
+                                    lastMsgUser += " " + users.value[lastMessage.senderID]?.lastName
+                                }
+
+                                lastMsgUser += ": "
+                            }
+                        }
+
+                        val lastMSGCleared = if (lastMessage.link.type == "FORWARD") {
+                            lastMessage.link.msgForLink.message.replace("\n", " ")
+                        } else {
+                            lastMessage.message.replace("\n", " ")
+                        }
+
+                        val annotatedString = buildAnnotatedString {
                             append(lastMsgUser)
 
-                        if (sortedMessages.last().value.attaches?.jsonArray?.isNotEmpty()
-                                ?: false
-                        ) {
-                            sortedMessages.last().value.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                            if (lastMessage.attaches?.jsonArray?.isNotEmpty() ?: false) {
+                                lastMessage.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                                    val type =
+                                        jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
+
+                                    if (type == "PHOTO") {
+                                        val imageId = "image_$index"
+                                        appendInlineContent(id = imageId)
+                                        append(" ")
+                                    }
+                                }
+                            }
+                            if (lastMessage.link.msgForLink.attaches is JsonArray && lastMessage.link.type == "FORWARD") {
+                                lastMessage.link.msgForLink.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                                    val type =
+                                        jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
+
+                                    if (type == "PHOTO") {
+                                        val imageId = "image_$index"
+                                        appendInlineContent(id = imageId)
+                                        append(" ")
+                                    }
+                                }
+                            }
+
+                            append(lastMSGCleared)
+
+                            if (lastMessage.link.type == "FORWARD") {
+                                appendInlineContent(id = "iconId")
+                            }
+                        }
+
+                        val inlineContentMap = mutableMapOf<String, InlineTextContent>(
+
+                        )
+                        val placeholder = Placeholder(
+                            width = 25.sp,
+                            height = 25.sp,
+                            placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
+                        )
+
+                        if (lastMessage.attaches?.jsonArray?.isNotEmpty() ?: false) {
+                            lastMessage.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
                                 val type = jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
                                 if (type == "PHOTO") {
                                     val imageId = "image_$index"
-                                    appendInlineContent(id = imageId)
-                                    append(" ")
+                                    inlineContentMap[imageId] =
+                                        InlineTextContent(placeholder) { _ ->
+                                            AsyncImage(
+                                                model = jsonelement.jsonObject["baseUrl"]!!.jsonPrimitive.content,
+                                                contentDescription = "ChatIcon",
+                                                modifier = Modifier
+                                                    .size(25.dp)
+                                                    .clip(RoundedCornerShape(2.dp)),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        }
                                 }
                             }
                         }
-                            append(lastMSGCleared)
 
-                    }
+                        if (lastMessage.link.type == "FORWARD" && lastMessage.link.msgForLink.attaches is JsonArray) {
+                            lastMessage.link.msgForLink.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                                println("sh1t jsonelm $jsonelement")
+                                val type = jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
-                    val inlineContentMap = mutableMapOf<String, InlineTextContent>(
-
-                    )
-                    val placeholder = Placeholder(
-                        width = 25.sp,
-                        height = 25.sp,
-                        placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
-                    )
-
-                    if (sortedMessages.last().value.attaches?.jsonArray?.isNotEmpty() ?: false) {
-                        sortedMessages.last().value.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
-                            val type = jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
-
-                            if (type == "PHOTO") {
-                                val imageId = "image_$index"
-                                inlineContentMap[imageId] = InlineTextContent(placeholder) { _ ->
-                                    AsyncImage(
-                                        model = jsonelement.jsonObject["baseUrl"]!!.jsonPrimitive.content,
-                                        contentDescription = "ChatIcon",
-                                        modifier = Modifier
-                                            .size(25.dp)
-                                            .clip(RoundedCornerShape(2.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                if (type == "PHOTO") {
+                                    val imageId = "image_$index"
+                                    inlineContentMap[imageId] =
+                                        InlineTextContent(placeholder) { _ ->
+                                            AsyncImage(
+                                                model = jsonelement.jsonObject["baseUrl"]!!.jsonPrimitive.content,
+                                                contentDescription = "ChatIcon",
+                                                modifier = Modifier
+                                                    .size(25.dp)
+                                                    .clip(RoundedCornerShape(2.dp)),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        }
                                 }
                             }
                         }
-                    }
 
-                    Text(
-                        text = annotatedString,
-                        fontSize = fontSize,
-                        inlineContent = inlineContentMap,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.alpha(0.7f)
-                    )
+                        if (lastMessage.link.type == "FORWARD") {
+                            inlineContentMap["iconId"] = InlineTextContent(placeholder) { _ ->
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Reply,
+                                    contentDescription = "penisicon",
+                                    // modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                        Text(
+                            text = annotatedString,
+                            fontSize = fontSize,
+                            inlineContent = inlineContentMap,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.alpha(0.7f)
+                        )
+                    } else {
+                        var text = ""
+                        val attach = lastMessage.attaches.jsonArray.last()
+
+                        val event = attach.jsonObject["event"]?.jsonPrimitive?.content
+
+                        when (event) {
+                            "remove" -> {
+                                val peoplesRemoved =
+                                    attach.jsonObject["userId"]?.jsonPrimitive?.long
+
+                                UserManager.checkForExisting(peoplesRemoved!!)
+                                UserManager.checkForExisting(lastMessage.senderID)
+
+                                var whomAdded = users.value[peoplesRemoved]?.firstName.toString()
+
+                                if (users.value[peoplesRemoved]?.lastName?.isNotEmpty() == true) {
+                                    whomAdded += " " + users.value[peoplesRemoved]?.lastName
+                                }
+                                if (lastMessage.senderID == AccountManager.accountID) {
+                                    text += "Вы удалили $whomAdded"
+                                } else {
+                                    var whoAdded =
+                                        users.value[lastMessage.senderID]?.firstName.toString()
+
+                                    if (users.value[lastMessage.senderID]?.firstName?.isNotEmpty() == true) {
+                                        whoAdded += " " + users.value[lastMessage.senderID]?.lastName
+                                    }
+
+                                    text += "$whoAdded удалил(-а) $whomAdded"
+                                }
+                            }
+
+                            "new" -> {
+                                var usr = ""
+
+                                UserManager.checkForExisting(lastMessage.senderID)
+                                if (chat.type != "CHANNEL") {
+                                    if (lastMessage.senderID == AccountManager.accountID) {
+                                        usr = "Вы"
+
+                                        text += "$usr создали чат"
+                                    } else {
+                                        usr =
+                                            users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                                        if (users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                                            usr += " " + users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                                        }
+
+                                        text += "$usr создал(-а) чат"
+                                    }
+                                } else {
+                                    text += "Канал создан"
+                                }
+                            }
+
+                            "add" -> {
+                                val peoplesAdded = attach.jsonObject["userIds"]?.jsonArray
+
+                                for (i in peoplesAdded!!) {
+                                    if (attach.jsonObject["userIds"]?.jsonArray?.isNotEmpty() == true) {
+                                        UserManager.checkForExisting(i.jsonPrimitive.long)
+                                    }
+                                }
+
+                                UserManager.checkForExisting(lastMessage.senderID)
+
+                                if (lastMessage.senderID == AccountManager.accountID) {
+                                    text += "Вы добавили "
+                                } else {
+                                    var whoAdded =
+                                        users.value[lastMessage.senderID]?.firstName.toString()
+
+                                    if (users.value[lastMessage.senderID]?.firstName?.isNotEmpty() == true) {
+                                        whoAdded += " " + users.value[lastMessage.senderID]?.lastName
+                                    }
+
+                                    text += "$whoAdded добавил(-а) "
+                                }
+
+                                for (i in peoplesAdded) {
+                                    var whomAdded =
+                                        users.value[i.jsonPrimitive.long]?.firstName.toString()
+
+                                    if (users.value[i.jsonPrimitive.long]?.lastName?.isNotEmpty() == true) {
+                                        whomAdded += " " + users.value[i.jsonPrimitive.long]?.lastName
+                                    }
+
+                                    text += whomAdded
+                                    if (i != peoplesAdded.last()) {
+                                        text += ", "
+                                    }
+                                }
+                            }
+
+                            "icon" -> {
+                                var userName = ""
+
+                                UserManager.checkForExisting(lastMessage.senderID)
+
+                                if (lastMessage.senderID == AccountManager.accountID) {
+                                    userName = "Вы"
+                                    val newTitle =
+                                        attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                                    text += "$userName изменили фото чата"
+                                } else {
+                                    userName =
+                                        users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                                    if (users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                                        userName += " " + users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                                    }
+
+                                    val newTitle =
+                                        attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                                    text += "$userName изменил(-а) фото чата"
+                                }
+                            }
+
+                            "title" -> {
+                                var userName = ""
+                                UserManager.checkForExisting(lastMessage.senderID)
+
+                                if (lastMessage.senderID == AccountManager.accountID) {
+                                    userName = "Вы"
+                                    val newTitle =
+                                        attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                                    text += "$userName изменили название чата на «$newTitle»"
+                                } else {
+                                    userName =
+                                        users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                                    if (users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                                        userName += " " + users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                                    }
+
+                                    val newTitle =
+                                        attach.jsonObject["title"]?.jsonPrimitive?.content
+
+                                    text += "$userName изменил(-а) название чата на «$newTitle»"
+                                }
+                            }
+
+                            "leave" -> {
+                                var userName = ""
+                                UserManager.checkForExisting(lastMessage.senderID)
+
+                                if (lastMessage.senderID == AccountManager.accountID) {
+                                    text += "Вы покинули чат"
+                                } else {
+                                    userName =
+                                        users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                                    if (users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                                        userName += " " + users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                                    }
+                                    text += "$userName покинул(-а) чат"
+                                }
+                            }
+
+                            "joinByLink" -> {
+                                var userName = ""
+                                UserManager.checkForExisting(attach.jsonObject["userId"]?.jsonPrimitive?.long!!)
+
+                                if (lastMessage.senderID == AccountManager.accountID) {
+                                    text += "Вы присоединились к чату"
+                                } else {
+                                    userName =
+                                        users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.firstName.toString()
+
+                                    if (users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName?.isNotEmpty() == true) {
+                                        userName += " " + users.value[attach.jsonObject["userId"]?.jsonPrimitive?.long]?.lastName
+                                    }
+                                    text += "$userName присоединился(-ась) к чату"
+                                }
+                            }
+
+                            "system" -> {
+                                text += attach.jsonObject["message"]?.jsonPrimitive?.content
+                            }
+                        }
+                        Text(
+                            text = text,
+                            fontSize = fontSize,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.alpha(0.7f)
+                        )
+                    }
                 }
             }
         }

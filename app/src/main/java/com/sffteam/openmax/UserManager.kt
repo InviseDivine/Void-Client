@@ -1,19 +1,21 @@
 package com.sffteam.openmax
 
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 
 data class User(
-    val avatarUrl: String,
-    val firstName: String,
-    val lastName: String,
-    val lastSeen: Long
+    val avatarUrl: String, val firstName: String, val lastName: String, val lastSeen: Long
 )
 
 object UserManager {
@@ -78,10 +80,7 @@ object UserManager {
 
                 val currentMap = mapOf(
                     userID to User(
-                        avatarUrl,
-                        firstName,
-                        lastName,
-                        0L
+                        avatarUrl, firstName, lastName, 0L
                     )
                 )
 
@@ -94,6 +93,33 @@ object UserManager {
             }
             println(_usersList.value.toMap())
             println("processing")
+        }
+    }
+
+    fun checkForExisting(user: Long) {
+        if (!usersList.value.containsKey(user)) {
+            val packet = SocketManager.packPacket(
+                OPCode.CONTACTS_INFO.opcode, JsonObject(
+                    mapOf(
+                        "contactIds" to JsonArray(
+                            listOf(
+                                Json.encodeToJsonElement(
+                                    Long.serializer(), user
+                                )
+                            )
+                        ),
+                    )
+                )
+            )
+            GlobalScope.launch {
+                SocketManager.sendPacket(
+                    packet, { packet ->
+                        println(packet.payload)
+                        if (packet.payload is JsonObject) {
+                            processUsers(packet.payload["contacts"]!!.jsonArray)
+                        }
+                    })
+            }
         }
     }
 }

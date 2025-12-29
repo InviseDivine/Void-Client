@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -31,7 +30,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.lifecycleScope
 import com.sffteam.openmax.ui.theme.AppTheme
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -41,8 +39,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.text.contains
-import kotlin.text.get
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "token")
 
@@ -79,18 +75,14 @@ class CodeActivity : ComponentActivity() {
                         )
                     )
                     Text(
-                        errorText.value,
-                        color = Color.White,
-                        fontSize = 25.sp
+                        errorText.value, color = Color.White, fontSize = 25.sp
                     )
 
                     val context = LocalContext.current
                     Button(
-                        modifier = Modifier.padding(16.dp),
-                        onClick = {
+                        modifier = Modifier.padding(16.dp), onClick = {
                             val packet = SocketManager.packPacket(
-                                OPCode.CHECK_CODE.opcode,
-                                JsonObject(
+                                OPCode.CHECK_CODE.opcode, JsonObject(
                                     mapOf(
                                         "token" to JsonPrimitive(
                                             intent.getStringExtra("token").toString()
@@ -103,8 +95,7 @@ class CodeActivity : ComponentActivity() {
 
                             GlobalScope.launch {
                                 SocketManager.sendPacket(
-                                    packet,
-                                    { packet ->
+                                    packet, { packet ->
                                         println(packet.payload)
                                         if (packet.payload is JsonObject) {
                                             if ("error" in packet.payload) {
@@ -112,17 +103,38 @@ class CodeActivity : ComponentActivity() {
                                                     packet.payload["localizedMessage"].toString()
                                             } else if ("tokenAttrs" in packet.payload) {
                                                 if ("REGISTER" in packet.payload["tokenAttrs"]!!.jsonObject) {
-                                                    val intent = Intent(context, RegisterActivity::class.java)
+                                                    val intent = Intent(
+                                                        context, RegisterActivity::class.java
+                                                    )
 
-                                                    val token = packet.payload["tokenAttrs"]!!.jsonObject["REGISTER"]!!.jsonObject["token"]!!.jsonPrimitive.content
+                                                    val token =
+                                                        packet.payload["tokenAttrs"]!!.jsonObject["REGISTER"]!!.jsonObject["token"]!!.jsonPrimitive.content
 
                                                     intent.putExtra("token", token)
 
                                                     startActivity(intent)
 
                                                     finish()
+                                                } else if ("passwordChallenge" in packet.payload) {
+                                                    val intent = Intent(
+                                                        context, PasswordCheckActivity::class.java
+                                                    )
+                                                    val trackId = packet.payload["passwordChallenge"]?.jsonObject["trackId"]?.jsonPrimitive?.content
+                                                    val hint = packet.payload["passwordChallenge"]?.jsonObject["hint"]?.jsonPrimitive?.content
+                                                    val email = packet.payload["passwordChallenge"]?.jsonObject["email"]?.jsonPrimitive?.content
+
+
+                                                    intent.putExtra("trackId", trackId)
+                                                    intent.putExtra("hint", hint)
+                                                    intent.putExtra("email", email)
+
+                                                    context.startActivity(intent)
+
+                                                    finish()
                                                 } else {
-                                                    val intent = Intent(context, ChatListActivity::class.java)
+                                                    val intent = Intent(
+                                                        context, ChatListActivity::class.java
+                                                    )
                                                     runBlocking {
                                                         dataStore.edit { settings ->
                                                             // Nice sandwich lol
@@ -132,11 +144,10 @@ class CodeActivity : ComponentActivity() {
                                                                 token
                                                             AccountManager.token = token
                                                         }
-
                                                     }
 
                                                     GlobalScope.launch {
-                                                        SocketManager.loginToAccount()
+                                                        SocketManager.loginToAccount(context)
                                                     }
 
                                                     context.startActivity(intent)
@@ -144,14 +155,12 @@ class CodeActivity : ComponentActivity() {
                                                     finish()
                                                 }
                                             } else {
-                                                println("wtf")
+
                                             }
                                         }
-                                    }
-                                )
+                                    })
                             }
-                        }
-                    ) {
+                        }) {
                         Text("Войти", fontSize = 25.sp)
                     }
                 }

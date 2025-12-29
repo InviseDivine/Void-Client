@@ -33,6 +33,12 @@ ui = "1.9.5"
 adaptive = "1.2.0"
 material3WindowSizeClass = "1.4.0"
 uiText = "1.10.0"
+animation = "1.10.0"
+animationCore = "1.10.0"
+foundationLayout = "1.10.0"
+navigationFragmentKtx = "2.6.0"
+navigationUiKtx = "2.6.0"
+zxingAndroidEmbedded = "4.3.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -75,6 +81,12 @@ androidx-compose-adaptive = { group = "androidx.compose.material3.adaptive", nam
 androidx-compose-material3-window-size-class1 = { group = "androidx.compose.material3", name = "material3-window-size-class", version.ref = "material3WindowSizeClass" }
 autolinktext = { module = "sh.calvin.autolinktext:autolinktext", version = "2.0.2" }
 androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
+androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
+androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
+androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
+androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
+zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
