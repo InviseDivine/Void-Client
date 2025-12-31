@@ -1,3 +1,5 @@
+# Void Client - самописный клиент для MAX'а с открытым исходным кодом
+
 <p align="center">
 <img width="200" height="200" alt="logo" src="https://github.com/user-attachments/assets/cc116a2d-29eb-483c-9a97-d39822374401" />
 </p>
@@ -7,7 +9,6 @@
 
 [![Static Badge](https://img.shields.io/badge/Telegram-Channel-blue)](https://t.me/max_voidclient)
 [![Static Badge](https://img.shields.io/badge/Download-Latest%20Release-purple)](https://github.com/InviseDivine/Void-Client/releases)
-# Void Client - самописный клиент для MAX'а с открытым исходным кодом
 
 ## Скриншоты:
 <p align="center">
