@@ -3,7 +3,7 @@
 </p>
 
 > [!Important]
-> Клиент находится в альфа-стадии разработки .
+> Клиент находится в альфа-стадии разработки, поэтому множество из запланированного не реализовано, постараюсь реализовать как можно быстрее :)
 
 [![Static Badge](https://img.shields.io/badge/Telegram-Channel-blue)](https://t.me/max_voidclient)
 [![Static Badge](https://img.shields.io/badge/Download-Latest%20Release-purple)](https://github.com/InviseDivine/Void-Client/releases)
