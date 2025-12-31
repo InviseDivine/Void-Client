@@ -15,6 +15,9 @@
         android:theme="@style/Theme.AppCompat.DayNight"
         tools:targetApi="31">
         <activity
+            android:name=".preferences.ChatSettingsActivity"
+            android:exported="false" />
+        <activity
             android:name=".preferences.AboutActivity"
             android:exported="false" />
         <activity

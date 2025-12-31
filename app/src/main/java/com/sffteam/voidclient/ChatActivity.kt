@@ -360,14 +360,34 @@ class ChatActivity : ComponentActivity() {
                         if (type == "CHANNEL") {
                             DrawBottomChannel(chatID)
                         } else {
-                            DrawBottomDialog(
-                                chatID,
-                                selectedMSGReply,
-                                onValChange = { newVal -> selectedMSGReply = newVal },
-                                type,
-                                onEditChange = { newVal -> selectedMSGEdit = newVal },
-                                selectedMessageEdit = selectedMSGEdit
-                            )
+                            if (type == "DIALOG") {
+                                var secondUser = 0L
+
+                                for (i in chats[chatID]?.users?.toList()!!) {
+                                    if (i.first != AccountManager.accountID) {
+                                        secondUser = i.first
+                                    }
+                                }
+                                if (secondUser != 543835L) {
+                                    DrawBottomDialog(
+                                        chatID,
+                                        selectedMSGReply,
+                                        onValChange = { newVal -> selectedMSGReply = newVal },
+                                        type,
+                                        onEditChange = { newVal -> selectedMSGEdit = newVal },
+                                        selectedMessageEdit = selectedMSGEdit
+                                    )
+                                }
+                            } else {
+                                DrawBottomDialog(
+                                    chatID,
+                                    selectedMSGReply,
+                                    onValChange = { newVal -> selectedMSGReply = newVal },
+                                    type,
+                                    onEditChange = { newVal -> selectedMSGEdit = newVal },
+                                    selectedMessageEdit = selectedMSGEdit
+                                )
+                            }
                         }
                     },
                 ) {
@@ -1065,7 +1085,7 @@ fun DrawMessage(
                             username.toString(),
                             color = Utils.getColorForNickname(username.toString()),
                             fontSize = 16.sp,
-                            modifier = Modifier.padding(start = 4.dp, end = 2.dp)
+                            modifier = Modifier.padding(start = 2.dp, end = 2.dp)
                         )
                     } else {
                         println("prevmsg $previousMessage")

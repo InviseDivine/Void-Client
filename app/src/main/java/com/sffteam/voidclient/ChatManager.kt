@@ -39,7 +39,6 @@ data class Message(
     val link: MessageLink = MessageLink()
 )
 
-
 data class Chat(
     val avatarUrl: String,
     val title: String,

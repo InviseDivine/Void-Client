@@ -1,9 +1,9 @@
 package com.sffteam.voidclient.preferences
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,20 +23,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.sffteam.voidclient.AccountManager
 import com.sffteam.voidclient.OPCode
+import com.sffteam.voidclient.R
 import com.sffteam.voidclient.SocketManager
 import com.sffteam.voidclient.ui.theme.AppTheme
-import io.github.g00fy2.quickie.QRResult
-import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 
-
-class SecurityActivity : ComponentActivity() {
+class ChatSettingsActivity : AppCompatActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,7 +67,7 @@ class SecurityActivity : ComponentActivity() {
                                 actionIconContentColor = Color.White
                             ),
                             title = {
-                                Text("Безопасность")
+                                Text("Настройки чатов")
                             },
                             navigationIcon = {
                                 IconButton({ finish() }) {

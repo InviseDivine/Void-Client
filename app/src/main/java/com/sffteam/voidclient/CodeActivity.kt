@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
@@ -48,11 +50,6 @@ class CodeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val view = this.window.decorView
-        view.setBackgroundColor(resources.getColor(R.color.black, null))
-
-        println(intent.getStringExtra("token").toString())
-
         setContent {
             AppTheme {
                 val code = remember { mutableStateOf("") }
@@ -61,7 +58,8 @@ class CodeActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        .background(colorScheme.background),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {

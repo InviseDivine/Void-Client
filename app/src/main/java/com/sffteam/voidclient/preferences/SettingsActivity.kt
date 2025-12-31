@@ -307,59 +307,58 @@ class SettingsActivity : ComponentActivity() {
 //                                                modifier = Modifier.align(Alignment.CenterVertically)
 //                                            )
 //                                        }
-
-                                        Row(
-                                            modifier = Modifier
-                                                .padding(12.dp)
-                                                .clickable {
-                                                    val intent =
-                                                        Intent(
-                                                            context,
-                                                            ProfileSettingsActivity::class.java
-                                                        )
-
-                                                    context.startActivity(intent)
-                                                },
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Outlined.ChatBubble,
-                                                "lol",
-                                                modifier = Modifier
-                                                    .size(25.dp)
-                                                    .padding()
-                                            )
-                                            Text(
-                                                "Настройки чатов", fontSize = 20.sp,
-                                                modifier = Modifier.align(Alignment.CenterVertically)
-                                            )
-                                        }
-                                        Row(
-                                            modifier = Modifier
-                                                .padding(12.dp)
-                                                .clickable {
-                                                    val intent =
-                                                        Intent(
-                                                            context,
-                                                            SecurityActivity::class.java
-                                                        )
-
-                                                    context.startActivity(intent)
-                                                },
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Outlined.Lock,
-                                                "lol",
-                                                modifier = Modifier
-                                                    .size(25.dp)
-                                                    .padding()
-                                            )
-                                            Text(
-                                                "Безопасность", fontSize = 20.sp,
-                                                modifier = Modifier.align(Alignment.CenterVertically)
-                                            )
-                                        }
+//                                        Row(
+//                                            modifier = Modifier
+//                                                .padding(12.dp)
+//                                                .clickable {
+//                                                    val intent =
+//                                                        Intent(
+//                                                            context,
+//                                                            ChatSettingsActivity::class.java
+//                                                        )
+//
+//                                                    context.startActivity(intent)
+//                                                },
+//                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+//                                        ) {
+//                                            Icon(
+//                                                Icons.Outlined.ChatBubble,
+//                                                "lol",
+//                                                modifier = Modifier
+//                                                    .size(25.dp)
+//                                                    .padding()
+//                                            )
+//                                            Text(
+//                                                "Настройки чатов", fontSize = 20.sp,
+//                                                modifier = Modifier.align(Alignment.CenterVertically)
+//                                            )
+//                                        }
+//                                        Row(
+//                                            modifier = Modifier
+//                                                .padding(12.dp)
+//                                                .clickable {
+//                                                    val intent =
+//                                                        Intent(
+//                                                            context,
+//                                                            SecurityActivity::class.java
+//                                                        )
+//
+//                                                    context.startActivity(intent)
+//                                                },
+//                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+//                                        ) {
+//                                            Icon(
+//                                                Icons.Outlined.Lock,
+//                                                "lol",
+//                                                modifier = Modifier
+//                                                    .size(25.dp)
+//                                                    .padding()
+//                                            )
+//                                            Text(
+//                                                "Безопасность", fontSize = 20.sp,
+//                                                modifier = Modifier.align(Alignment.CenterVertically)
+//                                            )
+//                                        }
 
                                         Row(
                                             modifier = Modifier
