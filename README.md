@@ -8,9 +8,9 @@
 
 ## Скриншоты:
 <p align="center">
-<img width="300" height="600" alt="изображение" src="https://github.com/user-attachments/assets/e16d90cb-5e9e-4c7e-9179-2a8f526c0cdf" />
-<img width="300" height="600" alt="изображение" src="https://github.com/user-attachments/assets/974994d9-f972-40ab-9985-c88381f9c4de" />
-<img width="300" height="600" alt="изображение" src="https://github.com/user-attachments/assets/db270753-8697-4ef6-816c-36879741231e" />
+<img width="300" height="700" alt="изображение" src="https://github.com/user-attachments/assets/e16d90cb-5e9e-4c7e-9179-2a8f526c0cdf" />
+<img width="300" height="700" alt="изображение" src="https://github.com/user-attachments/assets/974994d9-f972-40ab-9985-c88381f9c4de" />
+<img width="300" height="700" alt="изображение" src="https://github.com/user-attachments/assets/db270753-8697-4ef6-816c-36879741231e" />
 </p>
 
 ## Разработчики:
