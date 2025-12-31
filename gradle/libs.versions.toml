@@ -39,6 +39,7 @@ foundationLayout = "1.10.0"
 navigationFragmentKtx = "2.6.0"
 navigationUiKtx = "2.6.0"
 zxingAndroidEmbedded = "4.3.0"
+foundationVersion = "1.10.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -87,6 +88,7 @@ androidx-compose-foundation-layout = { group = "androidx.compose.foundation", na
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
+androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

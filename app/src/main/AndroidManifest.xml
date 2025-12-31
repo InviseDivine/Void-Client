@@ -9,17 +9,19 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="Open MAX"
+        android:label="Void Client"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight"
         tools:targetApi="31">
-
         <activity
-            android:name=".PasswordCheckActivity"
+            android:name=".preferences.AboutActivity"
             android:exported="false" />
         <activity
-            android:name=".PasswordCheck"
+            android:name=".preferences.DevicesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PasswordCheckActivity"
             android:exported="false" />
         <activity
             android:name=".preferences.SecurityActivity"
@@ -45,23 +47,14 @@
             android:label="@string/title_activity_chat_list"
             android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
-            android:name=".ScrollingActivity"
-            android:exported="false"
-            android:label="@string/title_activity_scrolling"
-            android:theme="@style/NoActionBar" />
-        <activity
             android:name=".CodeActivity"
             android:exported="false"
             android:label="@string/title_activity_code"
             android:theme="@style/Theme.OpenMax" />
         <activity
-            android:name="com.journeyapps.barcodescanner.CaptureActivity"
-            android:screenOrientation="portrait"
-            tools:replace="screenOrientation" />
-        <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/title_activity_main"
+            android:label="Void Client"
             android:theme="@style/Theme.OpenMax">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

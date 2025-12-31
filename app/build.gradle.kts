@@ -6,17 +6,17 @@ plugins {
 }
 
 android {
-    namespace = "com.sffteam.openmax"
+    namespace = "com.sffteam.voidclient"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.sffteam.openmax"
+        applicationId = "com.sffteam.voidclient"
         minSdk = 28
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "a1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
