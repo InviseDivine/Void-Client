@@ -62,6 +62,7 @@ class AboutActivity : ComponentActivity() {
     )
 
     val infoText = "Void Client - самописный клиент для MAX'а с открытым исходным кодом"
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,10 +106,11 @@ class AboutActivity : ComponentActivity() {
                         item {
                             val packageManager = context.packageManager
                             val appIconDrawable: Drawable =
-                                    packageManager.getApplicationIcon("com.sffteam.voidclient")
+                                packageManager.getApplicationIcon("com.sffteam.voidclient")
 
                             Image(
-                                appIconDrawable.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
+                                appIconDrawable.toBitmap(config = Bitmap.Config.ARGB_8888)
+                                    .asImageBitmap(),
                                 contentDescription = "Image", modifier = Modifier
                                     .size(100.dp)
                                     .padding(8.dp)
@@ -211,7 +213,7 @@ class AboutActivity : ComponentActivity() {
 }
 
 @Composable
-fun DrawDevelopers(people : String, desc : String) {
+fun DrawDevelopers(people: String, desc: String) {
     // TODO : Avatars
     Column() {
         Text(
@@ -232,7 +234,7 @@ fun DrawDevelopers(people : String, desc : String) {
 }
 
 @Composable
-fun DrawSpecialThanks(people : String) {
+fun DrawSpecialThanks(people: String) {
     Text(
         people,
         fontSize = 20.sp,

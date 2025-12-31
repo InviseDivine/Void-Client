@@ -246,43 +246,43 @@ fun DrawChatList() {
         Scaffold(topBar = {
             CenterAlignedTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = colorScheme.surfaceContainer,
-                titleContentColor = Color.White,
-                navigationIconContentColor = Color.White,
-                actionIconContentColor = Color.White
-            ), title = {
-                Text(
-                    "Void Client",
-                    fontSize = titleSize,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold
-                )
-            }, navigationIcon = {
-                IconButton({
-                    val intent = Intent(context, SettingsActivity::class.java)
+                    containerColor = colorScheme.surfaceContainer,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                ), title = {
+                    Text(
+                        "Void Client",
+                        fontSize = titleSize,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold
+                    )
+                }, navigationIcon = {
+                    IconButton({
+                        val intent = Intent(context, SettingsActivity::class.java)
 
-                    context.startActivity(intent)
-                }) {
-                    Icon(
-                        Icons.Filled.Settings, contentDescription = "Меню"
-                    )
-                }
-            }, actions = {
-                IconButton({ showBottomSheet = true }) {
-                    Icon(
-                        Icons.Filled.Add, contentDescription = "Добавить чат"
-                    )
-                }
-                IconButton({ }) { Icon(Icons.Filled.Search, contentDescription = "Поиск") }
-            }, modifier = Modifier.heightIn(max = 200.dp)
+                        context.startActivity(intent)
+                    }) {
+                        Icon(
+                            Icons.Filled.Settings, contentDescription = "Меню"
+                        )
+                    }
+                }, actions = {
+                    IconButton({ showBottomSheet = true }) {
+                        Icon(
+                            Icons.Filled.Add, contentDescription = "Добавить чат"
+                        )
+                    }
+                    IconButton({ }) { Icon(Icons.Filled.Search, contentDescription = "Поиск") }
+                }, modifier = Modifier.heightIn(max = 200.dp)
 
             )
         }) {
             LazyColumn(reverseLayout = true, state = listState, modifier = Modifier.padding(it)) {
                 items(chats.entries.toList().sortedBy { (_, value) ->
-                        value.messages.entries.toList()
-                            .maxByOrNull { (_, value) -> value.sendTime }!!.value.sendTime
-                    }, key = { entry ->
+                    value.messages.entries.toList()
+                        .maxByOrNull { (_, value) -> value.sendTime }!!.value.sendTime
+                }, key = { entry ->
                     entry.key
                 }) { entry ->
                     println(entry)
@@ -321,7 +321,6 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
     }
 
     Box(
-        // shape = RectangleShape,
         modifier = modifier
             .height(80.dp)
             .fillMaxWidth()
@@ -395,11 +394,11 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
                         .height(60.dp)
                         .clip(CircleShape)
                         .background(
-                            brush = Brush.linearGradient( // Create a vertical gradient
+                            brush = Brush.linearGradient(
                                 colors = listOf(
                                     Utils.getColorForAvatar(chatTitle).first,
                                     Utils.getColorForAvatar(chatTitle).second
-                                ) // Define the colors for the gradient
+                                )
                             )
                         ),
 
@@ -501,7 +500,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
                             append(lastMsgUser)
 
                             if (lastMessage.attaches?.jsonArray?.isNotEmpty() ?: false) {
-                                lastMessage.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                                lastMessage.attaches.jsonArray.forEachIndexed { index, jsonelement ->
                                     val type =
                                         jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
@@ -513,7 +512,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
                                 }
                             }
                             if (lastMessage.link.msgForLink.attaches is JsonArray && lastMessage.link.type == "FORWARD") {
-                                lastMessage.link.msgForLink.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                                lastMessage.link.msgForLink.attaches.jsonArray.forEachIndexed { index, jsonelement ->
                                     val type =
                                         jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
@@ -542,7 +541,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
                         )
 
                         if (lastMessage.attaches?.jsonArray?.isNotEmpty() ?: false) {
-                            lastMessage.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                            lastMessage.attaches.jsonArray.forEachIndexed { index, jsonelement ->
                                 val type = jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
                                 if (type == "PHOTO") {
@@ -563,7 +562,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
                         }
 
                         if (lastMessage.link.type == "FORWARD" && lastMessage.link.msgForLink.attaches is JsonArray) {
-                            lastMessage.link.msgForLink.attaches?.jsonArray?.forEachIndexed { index, jsonelement ->
+                            lastMessage.link.msgForLink.attaches.jsonArray.forEachIndexed { index, jsonelement ->
                                 println("sh1t jsonelm $jsonelement")
                                 val type = jsonelement.jsonObject["_type"]!!.jsonPrimitive.content
 
@@ -588,8 +587,7 @@ fun DrawUser(chatID: Long, chat: Chat, context: Context, modifier: Modifier) {
                             inlineContentMap["iconId"] = InlineTextContent(placeholder) { _ ->
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Reply,
-                                    contentDescription = "penisicon",
-                                    // modifier = Modifier.fillMaxSize()
+                                    contentDescription = "forwardIcon",
                                 )
                             }
                         }

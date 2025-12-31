@@ -66,19 +66,21 @@ class PasswordCheckActivity : ComponentActivity() {
                     )
 
                     Button(onClick = {
-                        val packet = SocketManager.packPacket(OPCode.PASSWORD_CHECK.opcode, JsonObject(
-                            mapOf(
-                                "password" to JsonPrimitive(password.value),
-                                "trackId" to JsonPrimitive(trackId)
+                        val packet = SocketManager.packPacket(
+                            OPCode.PASSWORD_CHECK.opcode, JsonObject(
+                                mapOf(
+                                    "password" to JsonPrimitive(password.value),
+                                    "trackId" to JsonPrimitive(trackId)
+                                )
                             )
-                        )
                         )
 
                         coroutineScope.launch {
                             SocketManager.sendPacket(packet, { packet ->
                                 if (packet.payload is JsonObject) {
                                     if (packet.payload.containsKey("error")) {
-                                        errorText.value = packet.payload["message"]!!.jsonPrimitive.content
+                                        errorText.value =
+                                            packet.payload["message"]!!.jsonPrimitive.content
                                     } else {
                                         val intent = Intent(
                                             context, ChatListActivity::class.java
@@ -88,8 +90,7 @@ class PasswordCheckActivity : ComponentActivity() {
                                                 // Nice sandwich lol
                                                 val token =
                                                     packet.payload["tokenAttrs"]!!.jsonObject["LOGIN"]!!.jsonObject["token"]!!.jsonPrimitive.content
-                                                settings[stringPreferencesKey("token")] =
-                                                    token
+                                                settings[stringPreferencesKey("token")] = token
                                                 AccountManager.token = token
                                             }
                                         }
@@ -105,8 +106,7 @@ class PasswordCheckActivity : ComponentActivity() {
                                 }
                             })
                         }
-                    }
-                    ) {
+                    }) {
                         Text("Войти")
                     }
                 }

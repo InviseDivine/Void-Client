@@ -69,7 +69,6 @@ object ChatManager {
 
     fun addMessage(messageID: String, message: Message, chatID: Long) {
         try {
-            println("msg $message")
             _chatsList.update { oldMap ->
                 oldMap + (chatID to Chat(
                     oldMap[chatID]?.avatarUrl ?: "",
@@ -98,11 +97,11 @@ object ChatManager {
             var status = ""
             var msgID = ""
 
-            var textForwarded: String = ""
-            var senderForwarded: Long = 0L
-            var msgForwardedID: String = ""
+            var textForwarded = ""
+            var senderForwarded = 0L
+            var msgForwardedID = ""
             var forwardedAttaches: JsonElement? = JsonNull
-            var forwardedType: String = ""
+            var forwardedType = ""
 
             try {
                 msg = i.jsonObject["text"]!!.jsonPrimitive.content
@@ -217,25 +216,23 @@ object ChatManager {
                 var attaches: JsonElement? = JsonNull
                 var usersCount = 0
 
-                var textForwarded: String = ""
-                var senderForwarded: Long = 0L
-                var msgForwardedID: String = ""
+                var textForwarded = ""
+                var senderForwarded = 0L
+                var msgForwardedID = ""
                 var forwardedAttaches: JsonElement? = JsonNull
-                var forwardedType: String = ""
+                var forwardedType = ""
 
                 try {
                     lastmsgtm =
                         i.jsonObject["lastMessage"]!!.jsonObject["time"]!!.jsonPrimitive.long
                 } catch (e: Exception) {
                     println(e)
-                    println("0msg")
                 }
 
                 try {
                     lastmsg =
                         i.jsonObject["lastMessage"]!!.jsonObject["text"]!!.jsonPrimitive.content
                 } catch (e: Exception) {
-                    println("1msg")
                     println(e)
                 }
 
@@ -243,7 +240,6 @@ object ChatManager {
                     senderID =
                         i.jsonObject["lastMessage"]!!.jsonObject["sender"]!!.jsonPrimitive.long
                 } catch (e: Exception) {
-                    println("5msg")
                     println(e)
                 }
 
@@ -251,20 +247,17 @@ object ChatManager {
                     status =
                         i.jsonObject["lastMessage"]!!.jsonObject["status"]!!.jsonPrimitive.content
                 } catch (e: Exception) {
-                    println("5msg")
                     println(e)
                 }
 
                 try {
                     msgID = i.jsonObject["lastMessage"]!!.jsonObject["id"]!!.jsonPrimitive.content
                 } catch (e: Exception) {
-                    println("5msg")
                     println(e)
                 }
 
 
                 if (i.jsonObject["lastMessage"]!!.jsonObject.contains("attaches")) {
-                    println("supercool attach $i.jsonObject[\"lastMessage\"]!!.jsonObject.contains(\"attaches\")")
                     try {
                         attaches = i.jsonObject["lastMessage"]!!.jsonObject["attaches"]
                     } catch (e: Exception) {
@@ -295,7 +288,6 @@ object ChatManager {
                         avatarUrl = i.jsonObject["baseIconUrl"]!!.jsonPrimitive.content
                     } catch (e: Exception) {
                         println(e)
-                        println("2msg")
                     }
                 }
 
@@ -304,7 +296,6 @@ object ChatManager {
                         title = i.jsonObject["title"]!!.jsonPrimitive.content
                     } catch (e: Exception) {
                         println(e)
-                        println("3msg")
                     }
                 } else {
                     if (chatID == 0L) {
@@ -395,10 +386,8 @@ object ChatManager {
                         UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
                     }
                 }
-            }
-        )
+            })
 
         return true
     }
-
 }

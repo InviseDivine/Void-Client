@@ -149,7 +149,7 @@ class ChatActivity : ComponentActivity() {
 
         println(ChatManager.chatsList.value[chatID]?.messages?.size)
 
-        // TODO : fix this sh1t code
+        // TODO : fix this code
         if (ChatManager.chatsList.value[chatID]?.messages?.size!! < 30 && ChatManager.chatsList.value[chatID]?.needGetMessages == true) {
             val packet = SocketManager.packPacket(
                 OPCode.CHAT_MESSAGES.opcode, JsonObject(
@@ -573,11 +573,12 @@ class ChatActivity : ComponentActivity() {
                                         )
                                     }
 
-                                    Row(modifier = Modifier
-                                        .clickable {
-                                            showPopup = true
-                                        }
-                                        .fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .clickable {
+                                                showPopup = true
+                                            }
+                                            .fillMaxWidth()) {
                                         Icon(
                                             Icons.Filled.Delete,
                                             contentDescription = "delete message",
@@ -1688,7 +1689,9 @@ fun DrawBottomDialog(
                                                 val content =
                                                     Json.parseToJsonElement(response.bodyAsText())
 
-                                                uploadedImages += Pair(i, content.jsonObject["photos"]!!.jsonObject)
+                                                uploadedImages += Pair(
+                                                    i, content.jsonObject["photos"]!!.jsonObject
+                                                )
 
                                                 print(content)
                                             } catch (e: Exception) {
@@ -1745,11 +1748,18 @@ fun DrawBottomDialog(
                             var coolJson = mutableListOf<JsonObject>()
                             for (i in uploadedImages) {
                                 println("elm $i")
-                                println("secon ${i.second.toList().last().second.jsonObject["token"]}")
-                                coolJson += JsonObject(mapOf(
-                                    "photoToken" to JsonPrimitive(i.second.toList().last().second.jsonObject["token"]!!.jsonPrimitive.content),
-                                    "_type" to JsonPrimitive("PHOTO")
+                                println(
+                                    "secon ${
+                                        i.second.toList().last().second.jsonObject["token"]
+                                    }"
                                 )
+                                coolJson += JsonObject(
+                                    mapOf(
+                                        "photoToken" to JsonPrimitive(
+                                            i.second.toList()
+                                                .last().second.jsonObject["token"]!!.jsonPrimitive.content
+                                        ), "_type" to JsonPrimitive("PHOTO")
+                                    )
                                 )
                                 println("cool jsn2 $coolJson")
                             }

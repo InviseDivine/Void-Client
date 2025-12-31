@@ -130,19 +130,17 @@ class ProfileSettingsActivity : ComponentActivity() {
 
                         val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
                             contract = ActivityResultContracts.PickVisualMedia(),
-                            onResult = {
-                                uri ->
+                            onResult = { uri ->
                                 println("uris $uri")
-                                selectedImages = listOf(uri) }
-                        )
+                                selectedImages = listOf(uri)
+                            })
 
-                        Box(modifier = Modifier
-                            .clickable {
-                                singlePhotoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                            },
-                            contentAlignment = Alignment.Center
+                        Box(
+                            modifier = Modifier.clickable {
+                                    singlePhotoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }, contentAlignment = Alignment.Center
                         ) {
                             if (you?.avatarUrl?.isNotEmpty() == true) {
                                 AsyncImage(
@@ -158,8 +156,8 @@ class ProfileSettingsActivity : ComponentActivity() {
                             } else {
                                 val fullName = you!!.firstName + you.lastName
                                 val initial =
-                                    fullName.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString("")
-                                        .uppercase(getDefault())
+                                    fullName.split(" ").mapNotNull { it.firstOrNull() }.take(2)
+                                        .joinToString("").uppercase(getDefault())
 
                                 Box(
                                     contentAlignment = Alignment.Center,
@@ -186,12 +184,13 @@ class ProfileSettingsActivity : ComponentActivity() {
                                 }
                             }
 
-                            Box(modifier = Modifier
-                                .background(
-                                    colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .align(Alignment.BottomEnd),
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .align(Alignment.BottomEnd),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -212,8 +211,7 @@ class ProfileSettingsActivity : ComponentActivity() {
                             },
                             label = { Text("Имя") },
                             textStyle = TextStyle(fontSize = 25.sp),
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally),
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
                         )
 
                         OutlinedTextField(
@@ -225,8 +223,7 @@ class ProfileSettingsActivity : ComponentActivity() {
                             },
                             label = { Text("Фамилия") },
                             textStyle = TextStyle(fontSize = 25.sp),
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
 
                         OutlinedTextField(
@@ -238,24 +235,24 @@ class ProfileSettingsActivity : ComponentActivity() {
                             },
                             label = { Text("О себе") },
                             textStyle = TextStyle(fontSize = 25.sp),
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
 
                         Button(
                             onClick = {
                                 if (selectedImages.isNotEmpty()) {
                                     println("mr")
-                                    var uploadedImages =
-                                        mapOf<String, JsonElement>()
+                                    var uploadedImages = mapOf<String, JsonElement>()
 
                                     var imageType = ""
                                     var imageName = ""
-                                    val cursor =
-                                        context.contentResolver.query(selectedImages.last()!!, null, null, null, null)
+                                    val cursor = context.contentResolver.query(
+                                        selectedImages.last()!!, null, null, null, null
+                                    )
                                     cursor?.use {
                                         if (it.moveToFirst()) {
-                                            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                                            val nameIndex =
+                                                it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
 
                                             imageName = it.getString(nameIndex)
                                         }
@@ -303,17 +300,20 @@ class ProfileSettingsActivity : ComponentActivity() {
                                                                         "attachment; filename=${imageName}"
                                                                     )
                                                                     append(
-                                                                        "X-Uploading-Mode", "parallel"
+                                                                        "X-Uploading-Mode",
+                                                                        "parallel"
                                                                     )
                                                                     append(
                                                                         "Content-Range",
                                                                         "bytes 0-${imageBytes!!.size - 1}/${imageBytes.size}"
                                                                     )
                                                                     append(
-                                                                        HttpHeaders.Connection, "keep-alive"
+                                                                        HttpHeaders.Connection,
+                                                                        "keep-alive"
                                                                     )
                                                                     append(
-                                                                        HttpHeaders.AcceptEncoding, "gzip"
+                                                                        HttpHeaders.AcceptEncoding,
+                                                                        "gzip"
                                                                     )
                                                                 }
 
@@ -325,7 +325,8 @@ class ProfileSettingsActivity : ComponentActivity() {
                                                         val content =
                                                             Json.parseToJsonElement(response.bodyAsText())
 
-                                                        uploadedImages = content.jsonObject["photos"]!!.jsonObject
+                                                        uploadedImages =
+                                                            content.jsonObject["photos"]!!.jsonObject
 
                                                         print(content)
 
@@ -335,10 +336,15 @@ class ProfileSettingsActivity : ComponentActivity() {
                                                             "firstName" to JsonPrimitive(firstName.value),
                                                             "lastName" to JsonPrimitive(lastName.value),
                                                         )
-                                                        packetJson["description"] = JsonPrimitive(desc.value)
+                                                        packetJson["description"] =
+                                                            JsonPrimitive(desc.value)
 
-                                                        packetJson["avatarType"] = JsonPrimitive("USER_AVATAR")
-                                                        packetJson["photoToken"] = JsonPrimitive(uploadedImages.toList().last().second.jsonObject["token"]!!.jsonPrimitive.content)
+                                                        packetJson["avatarType"] =
+                                                            JsonPrimitive("USER_AVATAR")
+                                                        packetJson["photoToken"] = JsonPrimitive(
+                                                            uploadedImages.toList()
+                                                                .last().second.jsonObject["token"]!!.jsonPrimitive.content
+                                                        )
 
                                                         val packet = SocketManager.packPacket(
                                                             OPCode.CHANGE_PROFILE.opcode,
@@ -347,15 +353,16 @@ class ProfileSettingsActivity : ComponentActivity() {
 
                                                         println("gay")
                                                         GlobalScope.launch {
-                                                            SocketManager.sendPacket(packet, { packet ->
-                                                                if (packet.payload is JsonObject) {
-                                                                    AccountManager.accountID =
-                                                                        packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["id"]!!.jsonPrimitive.long
+                                                            SocketManager.sendPacket(
+                                                                packet, { packet ->
+                                                                    if (packet.payload is JsonObject) {
+                                                                        AccountManager.accountID =
+                                                                            packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["id"]!!.jsonPrimitive.long
 
-                                                                    AccountManager.phone = packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["phone"]!!.jsonPrimitive.content
-                                                                }
-                                                            }
-                                                            )
+                                                                        AccountManager.phone =
+                                                                            packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["phone"]!!.jsonPrimitive.content
+                                                                    }
+                                                                })
                                                         }
                                                     } catch (e: Exception) {
                                                         e.printStackTrace()
@@ -374,8 +381,7 @@ class ProfileSettingsActivity : ComponentActivity() {
                                     packetJson["description"] = JsonPrimitive(desc.value)
 
                                     val packet = SocketManager.packPacket(
-                                        OPCode.CHANGE_PROFILE.opcode,
-                                        JsonObject(packetJson)
+                                        OPCode.CHANGE_PROFILE.opcode, JsonObject(packetJson)
                                     )
 
                                     GlobalScope.launch {
@@ -384,20 +390,21 @@ class ProfileSettingsActivity : ComponentActivity() {
                                                 AccountManager.accountID =
                                                     packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["id"]!!.jsonPrimitive.long
 
-                                                AccountManager.phone = packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["phone"]!!.jsonPrimitive.content
+                                                AccountManager.phone =
+                                                    packet.payload.jsonObject["profile"]!!.jsonObject["contact"]!!.jsonObject["phone"]!!.jsonPrimitive.content
                                             }
-                                        }
-                                        )
+                                        })
                                     }
                                 }
-                            }
-                        ) {
+                            }) {
                             Text("Сохранить", fontSize = 18.sp)
                         }
                         Button(
                             onClick = {
                                 // TODO: Clear chats and users
-                                val packet = SocketManager.packPacket(OPCode.LOGOUT.opcode, JsonObject(mapOf()))
+                                val packet = SocketManager.packPacket(
+                                    OPCode.LOGOUT.opcode, JsonObject(mapOf())
+                                )
 
                                 coroutineScope.launch {
                                     SocketManager.sendPacket(packet, {
@@ -405,8 +412,7 @@ class ProfileSettingsActivity : ComponentActivity() {
                                     })
                                 }
 
-                            }
-                        ) {
+                            }) {
                             Text("Выйти из профиля", fontSize = 18.sp)
                         }
                     }

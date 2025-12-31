@@ -19,21 +19,16 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.getValue
@@ -67,7 +62,8 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class MainActivity : ComponentActivity() {
     @OptIn(
-        DelicateCoroutinesApi::class, ExperimentalMaterial3WindowSizeClassApi::class,
+        DelicateCoroutinesApi::class,
+        ExperimentalMaterial3WindowSizeClassApi::class,
         ExperimentalMaterial3Api::class
     )
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,8 +79,7 @@ class MainActivity : ComponentActivity() {
         val context = this
 
         val codes = mapOf(
-            "Россия" to "+7",
-            "Беларусь" to "+375"
+            "Россия" to "+7", "Беларусь" to "+375"
         )
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
@@ -105,7 +100,6 @@ class MainActivity : ComponentActivity() {
                 val errorText = remember { mutableStateOf("") }
                 var selectedCodeStr = remember { mutableStateOf("Россия") }
                 var selectedCode = remember { mutableStateOf("+7") }
-                val expanded by remember { mutableStateOf(false) }
                 Utils.windowSize = calculateWindowSizeClass(this)
 
                 Column(
@@ -123,7 +117,8 @@ class MainActivity : ComponentActivity() {
 
                     Image(
                         appIconDrawable.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
-                        contentDescription = "Image", modifier = Modifier
+                        contentDescription = "Image",
+                        modifier = Modifier
                             .size(120.dp)
                             .padding(8.dp)
                             .clip(RoundedCornerShape(2.dp))
@@ -156,7 +151,8 @@ class MainActivity : ComponentActivity() {
                     ) {
                         // TODO: Rewrite
                         ExposedDropdownMenuBox(
-                            expanded = expanded, onExpandedChange = { expanded = it },
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it },
                             modifier = Modifier.width(180.dp)
                         ) {
                             OutlinedTextField(
@@ -179,8 +175,7 @@ class MainActivity : ComponentActivity() {
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                option.first,
-                                                modifier = Modifier.fillMaxSize()
+                                                option.first, modifier = Modifier.fillMaxSize()
                                             )
                                         },
                                         onClick = {
@@ -201,7 +196,9 @@ class MainActivity : ComponentActivity() {
                             },
                             label = { Text("Номер телефона") },
                             textStyle = TextStyle(fontSize = 25.sp),
-                            modifier = Modifier.padding(bottom = 3.dp).width(200.dp),
+                            modifier = Modifier
+                                .padding(bottom = 3.dp)
+                                .width(200.dp),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
                             )
@@ -244,11 +241,9 @@ class MainActivity : ComponentActivity() {
                                                 println("wtf")
                                             }
                                         }
-                                    }
-                                )
+                                    })
                             }
-                        }
-                    ) {
+                        }) {
                         Text("Продолжить", fontSize = 25.sp)
                     }
                 }

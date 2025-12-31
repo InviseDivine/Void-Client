@@ -77,6 +77,7 @@ object UserManager {
         }
     }
 
+    // TODO: Process users presence
     fun processPresence(presences: JsonArray) {
         for (i in presences.jsonObject.toList()) {
             val prs = i.second.jsonObject["seen"]?.jsonPrimitive?.long

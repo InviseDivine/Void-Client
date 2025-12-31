@@ -117,9 +117,12 @@ class CodeActivity : ComponentActivity() {
                                                     val intent = Intent(
                                                         context, PasswordCheckActivity::class.java
                                                     )
-                                                    val trackId = packet.payload["passwordChallenge"]?.jsonObject["trackId"]?.jsonPrimitive?.content
-                                                    val hint = packet.payload["passwordChallenge"]?.jsonObject["hint"]?.jsonPrimitive?.content
-                                                    val email = packet.payload["passwordChallenge"]?.jsonObject["email"]?.jsonPrimitive?.content
+                                                    val trackId =
+                                                        packet.payload["passwordChallenge"]?.jsonObject["trackId"]?.jsonPrimitive?.content
+                                                    val hint =
+                                                        packet.payload["passwordChallenge"]?.jsonObject["hint"]?.jsonPrimitive?.content
+                                                    val email =
+                                                        packet.payload["passwordChallenge"]?.jsonObject["email"]?.jsonPrimitive?.content
 
 
                                                     intent.putExtra("trackId", trackId)
@@ -152,8 +155,6 @@ class CodeActivity : ComponentActivity() {
 
                                                     finish()
                                                 }
-                                            } else {
-
                                             }
                                         }
                                     })

@@ -15,13 +15,14 @@ data class Session(
     val location: String = "",
     val current: Boolean = false,
     val time: Long = 0L,
-    val info : String = ""
+    val info: String = ""
 )
+
 object AccountManager {
     private val _sessionsList = MutableStateFlow<List<Session>>(emptyList())
     var sessionsList = _sessionsList.asStateFlow()
 
-    var logined : Boolean = false
+    var logined: Boolean = false
     var accountID: Long = 0L
     var token: String = ""
     var phone: String = ""
@@ -33,7 +34,7 @@ object AccountManager {
                 var location: String = ""
                 var current: Boolean = false
                 var time: Long = 0L
-                var info : String = ""
+                var info: String = ""
 
                 try {
                     client = i.jsonObject["client"]!!.jsonPrimitive.content

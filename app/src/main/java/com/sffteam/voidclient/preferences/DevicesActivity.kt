@@ -65,11 +65,13 @@ import kotlin.time.Instant.Companion.fromEpochMilliseconds
 class DevicesActivity : ComponentActivity() {
     val scanQrCodeLauncher = registerForActivityResult(ScanQRCode()) { result ->
         if (result is QRResult.QRSuccess) {
-            val packet = SocketManager.packPacket(OPCode.QR_CODE.opcode, JsonObject(
-                mapOf(
-                    "qrLink" to JsonPrimitive(result.content.rawValue.toString())
+            val packet = SocketManager.packPacket(
+                OPCode.QR_CODE.opcode, JsonObject(
+                    mapOf(
+                        "qrLink" to JsonPrimitive(result.content.rawValue.toString())
+                    )
                 )
-            ))
+            )
 
             runBlocking {
                 SocketManager.sendPacket(packet, { packet ->
@@ -80,6 +82,7 @@ class DevicesActivity : ComponentActivity() {
             }
         }
     }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -142,8 +145,10 @@ class DevicesActivity : ComponentActivity() {
 
                         item() {
                             Button(onClick = {
-                                val packet = SocketManager.packPacket(OPCode.SESSIONS_EXIT.opcode,
-                                    JsonObject(emptyMap()))
+                                val packet = SocketManager.packPacket(
+                                    OPCode.SESSIONS_EXIT.opcode,
+                                    JsonObject(emptyMap())
+                                )
 
                                 coroutineScope.launch {
                                     SocketManager.sendPacket(packet, { packet ->
@@ -152,11 +157,12 @@ class DevicesActivity : ComponentActivity() {
                                             try {
                                                 runBlocking {
                                                     context.dataStore.edit { settings ->
-                                                        settings[stringPreferencesKey("token")] = packet.payload["token"]!!.jsonPrimitive.content
+                                                        settings[stringPreferencesKey("token")] =
+                                                            packet.payload["token"]!!.jsonPrimitive.content
                                                         SocketManager.loginToAccount(context)
                                                     }
                                                 }
-                                            } catch (e : Exception) {
+                                            } catch (e: Exception) {
                                                 println(e)
                                             }
                                         }

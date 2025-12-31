@@ -7,7 +7,6 @@ import android.os.Build
 import android.provider.Settings
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.daveanthonythomas.moshipack.MoshiPack
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Socket
@@ -36,14 +35,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import net.jpountz.lz4.LZ4Factory
 import net.jpountz.lz4.LZ4FastDecompressor
-import org.apache.commons.codec.binary.Hex
 import org.msgpack.jackson.dataformat.MessagePackFactory
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -57,34 +54,23 @@ const val API_VERSION = 10 // lol
 var Seq = 1
 
 enum class OPCode(val opcode: Int) {
-    PING(1),
-    START(6), // Using that on open socket
-    CHANGE_PROFILE(16),
-    START_AUTH(17),
-    CHECK_CODE(18), // Also can be LOGIN packet from server or WRONG_CODE from server
+    PING(1), START(6), // Using that on open socket
+    CHANGE_PROFILE(16), START_AUTH(17), CHECK_CODE(18), // Also can be LOGIN packet from server or WRONG_CODE from server
     PROFILE_INFO(19), // Server returns profile info with that opcode
-    LOGOUT(20),
-    NOTIFICATION_SET(22), // Set notification for chat
+    LOGOUT(20), NOTIFICATION_SET(22), // Set notification for chat
     NEW_STICKER_SETS(26), // Idk, implement it later
     SYNC_EMOJI(27), // Also syncs ANIMOJI, REACTIONS, STICKERS, FAVORITE_STICKER
     ANIMOJI(28), // Idk
     CONTACTS_INFO(32), // Returns info about ids that your sent (if you sent ids that not your contacts, server return you just a empty array)
     LAST_SEEN(35), // Used for obtain last seen of contacts
-    CHAT_INFO(48),
-    CHAT_MESSAGES(49),
-    JOIN_CHAT(57),
-    SEND_MESSAGE(64),
-    DELETE_MESSAGE(66),
-    EDIT_MESSAGE(67),
+    CHAT_INFO(48), CHAT_MESSAGES(49), JOIN_CHAT(57), SEND_MESSAGE(64), DELETE_MESSAGE(66), EDIT_MESSAGE(
+        67
+    ),
     CHAT_SUBSCRIBE(75), // Idk
     WHO_CAN_SEE(76), // Used for disable or enable status online
     HISTORY(79), // Idk
-    UPLOAD_IMAGE(80),
-    SESSIONS(96), // Used for obtain all sessions for account
-    SESSIONS_EXIT(97),
-    PASSWORD_CHECK(115),
-    SYNC_FOLDER(272),
-    QR_CODE(290)
+    UPLOAD_IMAGE(80), SESSIONS(96), // Used for obtain all sessions for account
+    SESSIONS_EXIT(97), PASSWORD_CHECK(115), SYNC_FOLDER(272), QR_CODE(290)
 }
 
 @Serializable
@@ -116,7 +102,7 @@ fun messagePackToJson(bytes: ByteArray): String {
     return jsonMapper.writeValueAsString(node)
 }
 
-fun jsonToMessagePack(json : String): ByteArray {
+fun jsonToMessagePack(json: String): ByteArray {
     val jsonMapper = ObjectMapper()
     val msgPackMapper = ObjectMapper(MessagePackFactory())
 
@@ -139,13 +125,11 @@ object SocketManager {
         val seq = Seq.toShort().toByteArrayBigEndian()
         val opcode = opcode.toShort().toByteArrayBigEndian()
         println("string ${payload.toString()}")
-        val pay = jsonToMessagePack(payload.toString())
-        val payload = MoshiPack().jsonToMsgpack(payload.toString()).readByteArray()
-        println(pay)
+        val payload = jsonToMessagePack(payload.toString())
         val payloadLen = payload.size and 0xFFFFFF
 
         return byteArrayOf(
-            apiVer, cmd, *seq, *opcode, *payloadLen.toByteArrayBigEndian(), *pay
+            apiVer, cmd, *seq, *opcode, *payloadLen.toByteArrayBigEndian(), *payload
         )
     }
 
@@ -153,35 +137,24 @@ object SocketManager {
         // Thanks to https://github.com/ink-developer/PyMax/blob/main/src/pymax/mixins/socket.py#L42
         val factory = LZ4Factory.fastestInstance()
         val decompressor: LZ4FastDecompressor = factory.fastDecompressor()
-        println(Hex.encodeHex(data))
 
         val apiVer = data[0].toInt() and 0xFF
-        println(apiVer)
-
         val cmd = data[1].toInt() and 0xFF
-
-        println(cmd)
-
         val seqSigned = ByteBuffer.wrap(data, 2, 2).order(ByteOrder.BIG_ENDIAN).short
         val seq = seqSigned.toInt() and 0xFFFF
 
-        println(seq)
 
         val opcodeSigned = ByteBuffer.wrap(data, 4, 2).order(ByteOrder.BIG_ENDIAN).short
         val opcode = opcodeSigned.toInt() and 0xFFFF
 
-        println(opcode)
         val packedLen =
             ByteBuffer.wrap(data, 6, 4).order(ByteOrder.BIG_ENDIAN).int.toLong() and 0xFFFFFFFFL
 
         val compFlag = (packedLen shr 24).toInt()
         val payloadLength = (packedLen and 0xFFFFFF).toInt()
-        println(data.size)
-        println(payloadLength)
-        println("test3")
 
         val payloadBytes = data.sliceArray(10 until (10 + payloadLength))
-        var payload: String = ""
+        var payload = ""
 
         if (payloadBytes.isNotEmpty()) {
             if (compFlag != 0) {
@@ -279,7 +252,7 @@ object SocketManager {
         }
     }
 
-    suspend fun loginToAccount(context : Context) = coroutineScope {
+    suspend fun loginToAccount(context: Context) = coroutineScope {
         val packet = packPacket(
             OPCode.PROFILE_INFO.opcode, JsonObject(
                 mapOf(
@@ -296,29 +269,22 @@ object SocketManager {
 
         sendPacket(
             packet, { packet ->
-                println("processin1g")
                 if (packet.payload.jsonObject.containsKey("error")) {
                     val intent: Intent = Intent(context, MainActivity::class.java)
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    println("ERROR NAH")
                     AccountManager.token = "null"
 
                     println(AccountManager.token)
-                    println("edited")
 
                     runBlocking {
-                        println("edited")
                         try {
                             context.dataStore.edit { settings ->
-                                println("edited")
                                 settings[stringPreferencesKey("token")] = "null"
-                                println("edited")
                             }
-                        } catch (e : Exception) {
+                        } catch (e: Exception) {
                             println(e)
                         }
                     }
-
                     context.startActivity(intent)
                 } else {
                     println(packet)
@@ -347,8 +313,7 @@ object SocketManager {
                                             UserManager.processUsers(packet.payload["contacts"]!!.jsonArray)
                                         }
                                     }
-                                }
-                            )
+                                })
                         }
                     } catch (e: Exception) {
                         println(e)
@@ -364,7 +329,6 @@ object SocketManager {
                     GlobalScope.launch {
                         ChatManager.processChats(packet.payload.jsonObject["chats"]!!.jsonArray)
                     }
-                    println("processi2ng")
                 }
             })
     }
@@ -382,14 +346,11 @@ object SocketManager {
     }
 
     suspend fun getPackets() {
-        println("trying to get")
         val receiveChannel = socket.openReadChannel()
         try {
             var entirePacket = ByteArray(131072)
             var pos = 0
             while (socket.isActive) {
-                println("trying 2get")
-
                 val buffer = ByteArray(8192)
                 val bytesRead = receiveChannel.readAvailable(buffer, 0, 8192)
 

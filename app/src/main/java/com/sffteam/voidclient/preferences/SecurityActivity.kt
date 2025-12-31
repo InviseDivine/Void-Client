@@ -57,8 +57,6 @@ class SecurityActivity : ComponentActivity() {
             }
 
             AppTheme {
-                val context = LocalContext.current
-
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -89,14 +87,11 @@ class SecurityActivity : ComponentActivity() {
                             .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        item() {
-                        }
+                        item() {}
 
-                        item() {
-                        }
+                        item() {}
 
-                        item() {
-                        }
+                        item() {}
                     }
                 }
             }

@@ -93,8 +93,7 @@ class SettingsActivity : ComponentActivity() {
                                 }
                             },
                         )
-                    }
-                ) {
+                    }) {
                     val context = LocalContext.current
                     val users by UserManager.usersList.collectAsState()
 
@@ -139,8 +138,8 @@ class SettingsActivity : ComponentActivity() {
                                     } else {
                                         val fullName = user?.firstName + user?.lastName
                                         val initial =
-                                            fullName.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString("")
-                                                .uppercase(getDefault())
+                                            fullName.split(" ").mapNotNull { it.firstOrNull() }
+                                                .take(2).joinToString("").uppercase(getDefault())
 
                                         Box(
                                             contentAlignment = Alignment.Center,
@@ -157,7 +156,7 @@ class SettingsActivity : ComponentActivity() {
                                                     )
                                                 )
                                                 .align(Alignment.CenterHorizontally),
-                                            ) {
+                                        ) {
                                             Text(
                                                 text = initial,
                                                 color = Color.White,
@@ -177,14 +176,12 @@ class SettingsActivity : ComponentActivity() {
                                                     clipboardManager.setClipEntry(
                                                         ClipEntry(
                                                             ClipData.newPlainText(
-                                                                username,
-                                                                username
+                                                                username, username
                                                             )
                                                         )
                                                     )
                                                 }
-                                            }
-                                    )
+                                            })
 
                                     Text(
                                         text = "+${AccountManager.phone}",
@@ -202,8 +199,7 @@ class SettingsActivity : ComponentActivity() {
                                                         )
                                                     )
                                                 }
-                                            }
-                                    )
+                                            })
                                     Text(
                                         text = "ID: ${AccountManager.accountID}",
                                         fontSize = 16.sp,
@@ -220,8 +216,7 @@ class SettingsActivity : ComponentActivity() {
                                                         )
                                                     )
                                                 }
-                                            }
-                                    )
+                                            })
 
                                     Text(
                                         text = "Нажмите на информацию, чтобы скопировать её",
@@ -246,8 +241,7 @@ class SettingsActivity : ComponentActivity() {
                                                 Intent(context, ProfileSettingsActivity::class.java)
 
                                             context.startActivity(intent)
-                                        }
-                                ) {
+                                        }) {
                                     Column() {
                                         Row(
                                             modifier = Modifier.padding(12.dp),
@@ -261,7 +255,8 @@ class SettingsActivity : ComponentActivity() {
                                                     .padding()
                                             )
                                             Text(
-                                                "Мой аккаунт", fontSize = 20.sp,
+                                                "Мой аккаунт",
+                                                fontSize = 20.sp,
                                                 modifier = Modifier.align(Alignment.CenterVertically)
                                             )
                                         }
@@ -379,7 +374,8 @@ class SettingsActivity : ComponentActivity() {
                                                     .padding()
                                             )
                                             Text(
-                                                "Устройства", fontSize = 20.sp,
+                                                "Устройства",
+                                                fontSize = 20.sp,
                                                 modifier = Modifier.align(Alignment.CenterVertically)
                                             )
                                         }
@@ -405,7 +401,8 @@ class SettingsActivity : ComponentActivity() {
                                                     .alpha(0.7f)
                                             )
                                             Text(
-                                                "Уведомления", fontSize = 20.sp,
+                                                "Уведомления",
+                                                fontSize = 20.sp,
                                                 modifier = Modifier
                                                     .align(Alignment.CenterVertically)
                                                     .alpha(0.7f)
@@ -434,7 +431,8 @@ class SettingsActivity : ComponentActivity() {
 
                                             )
                                             Text(
-                                                "Папки с чатами", fontSize = 20.sp,
+                                                "Папки с чатами",
+                                                fontSize = 20.sp,
                                                 modifier = Modifier
                                                     .align(Alignment.CenterVertically)
                                                     .alpha(0.7f)
@@ -474,7 +472,8 @@ class SettingsActivity : ComponentActivity() {
                                                     .padding()
                                             )
                                             Text(
-                                                "О приложении", fontSize = 20.sp,
+                                                "О приложении",
+                                                fontSize = 20.sp,
                                                 modifier = Modifier.align(Alignment.CenterVertically)
                                             )
                                         }
@@ -483,7 +482,9 @@ class SettingsActivity : ComponentActivity() {
                             }
                         }
                         Text(
-                            "Void Client a1.0.0", fontSize = 14.sp, modifier = Modifier
+                            "Void Client a1.0.0",
+                            fontSize = 14.sp,
+                            modifier = Modifier
                                 .alpha(0.7f)
                                 .align(Alignment.BottomCenter)
                         )

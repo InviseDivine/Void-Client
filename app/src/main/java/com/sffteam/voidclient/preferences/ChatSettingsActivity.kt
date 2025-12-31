@@ -21,13 +21,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.sffteam.voidclient.AccountManager
 import com.sffteam.voidclient.OPCode
-import com.sffteam.voidclient.R
 import com.sffteam.voidclient.SocketManager
 import com.sffteam.voidclient.ui.theme.AppTheme
 import kotlinx.coroutines.launch
@@ -55,8 +51,6 @@ class ChatSettingsActivity : AppCompatActivity() {
             }
 
             AppTheme {
-                val context = LocalContext.current
-
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -87,14 +81,11 @@ class ChatSettingsActivity : AppCompatActivity() {
                             .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        item() {
-                        }
+                        item() {}
 
-                        item() {
-                        }
+                        item() {}
 
-                        item() {
-                        }
+                        item() {}
                     }
                 }
             }
