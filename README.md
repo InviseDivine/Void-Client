@@ -3,7 +3,7 @@
 </p>
 
 [![Static Badge](https://img.shields.io/badge/Telegram-Channel-blue)](https://t.me/max_voidclient)
-[![Скачать последнюю версию](https://img.shields.io/badge/Download-95%Latest-orange)](https://github.com/jonsn0w/Hyde/watchers)
+[![Static Badge](https://img.shields.io/badge/Download-Latest%20Release-purple)](https://github.com/InviseDivine/Void-Client/releases)
 # Void Client - самописный клиент для MAX'а с открытым исходным кодом
 
 ## Скриншоты:
