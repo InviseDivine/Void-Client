@@ -2,8 +2,8 @@
 <img width="200" height="200" alt="logo" src="https://github.com/user-attachments/assets/cc116a2d-29eb-483c-9a97-d39822374401" />
 </p>
 
-[![Telegram](https://img.shields.io/github/watchers/jonsn0w/hyde.svg?style=social)](https://t.me/max_voidclient)
-[![Скачать последнюю версию](https://img.shields.io/github/watchers/jonsn0w/hyde.svg?style=social)](https://github.com/jonsn0w/Hyde/watchers)
+[![Telegram]](https://t.me/max_voidclient)
+[![Скачать последнюю версию]](https://github.com/jonsn0w/Hyde/watchers)
 # Void Client - самописный клиент для MAX'а с открытым исходным кодом
 
 **Скриншоты:**
