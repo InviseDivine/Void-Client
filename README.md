@@ -23,13 +23,20 @@ InviseDivine - Разработчик, дизайнер, основатель п
 Jaan - Помощь с разработкой SocketManager'а
 
 ## Отдельные благодарности:
-  Kolyah35
+  Kolyah35 
+  
   CITRIM
+  
   DeL
+  
   FullHarmony
+  
   danilka22ah
+  
   njuyse
+  
   TeamKomet
+  
   a555lieva
+  
   Irishka_Piper
-
