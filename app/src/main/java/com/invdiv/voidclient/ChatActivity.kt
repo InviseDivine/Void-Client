@@ -3284,7 +3284,10 @@ fun DrawImages(attaches: JsonArray, context : Context, chatId : Long, messageId 
     } else if (attachmentSize == 1) {
         val type = attaches.last().jsonObject["_type"]!!.jsonPrimitive.content
 
-        val modifier = if (!message.isNullOrEmpty()) {
+        val width = attaches.last().jsonObject["width"]!!.jsonPrimitive.int
+        val height = attaches.last().jsonObject["height"]!!.jsonPrimitive.int
+
+        val modifier = if (message.isNullOrEmpty()) {
             Modifier.width(messageWidth.dp)
         } else {
             Modifier
@@ -3299,6 +3302,12 @@ fun DrawImages(attaches: JsonArray, context : Context, chatId : Long, messageId 
         } else {
             null
         }
+
+
+
+        val scale =
+            ContentScale.FillWidth
+
 
         if (type == "PHOTO") {
             AsyncImage(
@@ -3325,7 +3334,7 @@ fun DrawImages(attaches: JsonArray, context : Context, chatId : Long, messageId 
                         context.startActivity(intent)
                     },
 
-                contentScale = ContentScale.Fit
+                contentScale = scale
             )
         }
 
@@ -3423,7 +3432,7 @@ fun DrawImages(attaches: JsonArray, context : Context, chatId : Long, messageId 
                                 })
                             }
                         },
-                    contentScale = ContentScale.Fit,
+                    contentScale = scale,
                 )
 
                 Box(modifier = Modifier
