@@ -302,7 +302,6 @@ fun Ui() {
                             SocketManager.sendPhoneNumber(choseCountryMap!!.phoneCode + phone.value, { packet ->
                                 if (packet.payload is JsonObject) {
                                     if ("error" in packet.payload) {
-                                        println(packet.payload)
                                         errText.value =
                                             packet.payload["localizedMessage"]?.jsonPrimitive?.content!!
                                     } else if ("token" in packet.payload) {

@@ -57,7 +57,6 @@ object UsersManager {
                         contact.jsonObject["baseUrl"]
                             ?.jsonPrimitive
                             ?.content ?: ""
-                    println("User: $firstName")
                     val lastName =
                         contact.jsonObject["names"]!!
                             .jsonArray[0]
@@ -69,8 +68,6 @@ object UsersManager {
                         contact.jsonObject["description"]
                             ?.jsonPrimitive
                             ?.content ?: ""
-
-                    println(_usersList.value[userID]?.lastSeen)
 
                     put(
                         userID,
@@ -104,7 +101,6 @@ object UsersManager {
             OPCode.LAST_SEEN, payload, { packet ->
                 if (packet.payload is JsonObject) {
                     GlobalScope.launch {
-                        println("last seen: ${packet.payload}")
                         if (!packet.payload.contains("userId") && !packet.payload.contains("error") && packet.payload.contains("presence")) {
                             processPresences(packet.payload["presence"]!!.jsonObject)
                         }
@@ -131,8 +127,6 @@ object UsersManager {
                         oldMap[userID]?.typing ?: 0L
                     ))
                 }
-
-                println("presences updated for ${_usersList.value[userID]?.firstName} (id $userID)")
             } catch (e: Exception) {
                 Log.e("ChatsManager", "Error while trying to update presence message: $e")
             }

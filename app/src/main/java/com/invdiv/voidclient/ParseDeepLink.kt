@@ -69,12 +69,6 @@ class ParseDeepLink : ComponentActivity() {
 
 suspend fun parseUri(uri: Uri?, context: Context) {
     if (uri != null) {
-        println("URI = $uri")
-        println("scheme = ${uri?.scheme}")
-        println("host = ${uri?.host}")
-        println("path = ${uri?.path}")
-        println("query = ${uri?.query}")
-
         val path = uri.path
 
         val strs = path?.split("/")?.toList()

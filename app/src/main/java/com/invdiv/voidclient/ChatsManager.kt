@@ -215,8 +215,6 @@ object ChatsManager {
                     oldMap[chatID]?.inviteLink ?: "",
                 ))
             }
-
-            Log.i("ChatsManager", "Chat ${_chatsList.value[chatID]?.title} was updated")
         } catch (e: Exception) {
             Log.e("ChatsManager", "Error while trying to process messages for chat $chatID: $e")
         }
@@ -382,7 +380,6 @@ object ChatsManager {
 
                 for (i in chat.jsonObject["participants"]?.jsonObject?.toList()!!) {
                     val idEncoded = Json.encodeToJsonElement(Long.serializer(), i.first.toLong())
-                    println(idEncoded)
 
                     if (!usersId.contains(idEncoded)) {
                         usersId += idEncoded
@@ -457,7 +454,6 @@ object ChatsManager {
             SocketManager.sendPacket(
                 OPCode.CONTACTS_INFO, payload, { packet ->
                     if (packet.payload is JsonObject) {
-                        println("Contacts packet: ${packet.payload["contacts"]!!.jsonArray}")
                         GlobalScope.launch {
                             // UsersManager.processUsers(packet.payload["contacts"]!!.jsonArray)
                         }

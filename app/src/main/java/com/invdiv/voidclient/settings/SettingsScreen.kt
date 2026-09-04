@@ -64,9 +64,9 @@ fun MainSettingsScreen(navController : NavController) {
     val coroutineScope = rememberCoroutineScope()
 
     val tabs = mapOf(
-        "Безопасность" to SettingTab(Icons.Filled.Lock, "Безопасность", "Описание"),
-        "Устройства" to SettingTab(Icons.Filled.Devices, "Устройства", "Описание"),
-        "О приложении" to SettingTab(Icons.Filled.Info, "О приложении", "Описание")
+        "Безопасность" to SettingTab(Icons.Filled.Lock, "Безопасность", "Безопасный режим, конфидециальность"),
+        "Устройства" to SettingTab(Icons.Filled.Devices, "Устройства", "Сессии, вход по QR-коду"),
+        "О приложении" to SettingTab(Icons.Filled.Info, "О приложении", "Разработчики, информация")
     )
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {

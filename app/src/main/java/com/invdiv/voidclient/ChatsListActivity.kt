@@ -135,8 +135,6 @@ class ChatsListActivity : ComponentActivity() {
         }
 
         val joinLink = intent.getStringExtra("link")
-
-        println(intent.getStringExtra("navigateTo"))
         setContent {
             VoidclientTheme() {
                 DrawLink(joinLink)
@@ -561,8 +559,6 @@ fun DrawUser(chatID: Long, chat: Chat, forwardChatID : Long, forwardMessageID : 
 
     val sortedMessages = chat.messages?.entries?.toList()?.sortedBy { (_, value) -> value.sendTime }
     val lastMessage = sortedMessages?.last()?.value ?: Message()
-
-    println(lastMessage)
 
     var lastUser = ""
     var chatIcon : String? = null

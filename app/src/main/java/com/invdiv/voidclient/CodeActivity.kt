@@ -240,7 +240,6 @@ fun CodeUi(token : String, number : String) {
                             contentAlignment = Alignment.Center
                         ) {
                             if (char != null) {
-                                println(char.toString())
                                 Text(char.toString(), style = MaterialTheme.typography.displaySmall, color = colorScheme.onBackground, textAlign = TextAlign.Center)
                             } else if (i == code.value.length) {
                                 Box(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp).background(colorScheme.primary).width(2.dp).height(MaterialTheme.typography.displaySmall.fontSize.value.dp)) {
@@ -280,7 +279,6 @@ fun CodeUi(token : String, number : String) {
                         SocketManager.resendPhoneNumber(number, { packet ->
                             if (packet.payload is JsonObject) {
                                 if ("error" in packet.payload) {
-                                    println(packet.payload)
                                     errText.value =
                                         packet.payload["localizedMessage"]?.jsonPrimitive?.content!!
                                 } else if ("token" in packet.payload) {

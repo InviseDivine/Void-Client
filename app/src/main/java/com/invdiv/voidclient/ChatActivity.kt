@@ -606,7 +606,6 @@ fun DrawColumn(chatID: Long, modifier: Modifier, chatType: String, bottom : Dp, 
             ?: emptyList()
     }
 
-    println("lastmessage: ${sortedMessages.last()}")
     val isAtBottom by remember {
         derivedStateOf {
             val visibleItems = listState.layoutInfo.visibleItemsInfo
@@ -948,8 +947,6 @@ fun sendMessage(message : String, chatID : Long, chat : Chat, chatType : String,
             )
         )
     )
-
-    println(payload)
 
     GlobalScope.launch {
         SocketManager.sendPacket(OPCode.SEND_MESSAGE, payload, { packet->

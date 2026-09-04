@@ -174,7 +174,6 @@ fun SecurityScreen() {
                         if (payload.isNotEmpty()) {
                             coroutineScope.launch {
                                 SocketManager.sendPacket(OPCode.SETTINGS_CHANGE, JsonObject(payload), { packet ->
-                                    println(packet)
                                     coroutineScope.launch {
                                         AccountManager.processSecuritySettings(packet.payload.jsonObject, context)
                                     }
@@ -218,7 +217,6 @@ fun SecurityScreen() {
                         if (payload.isNotEmpty()) {
                             coroutineScope.launch {
                                 SocketManager.sendPacket(OPCode.SETTINGS_CHANGE, JsonObject(payload), { packet ->
-                                    println(packet)
                                     coroutineScope.launch {
                                         AccountManager.processSecuritySettings(packet.payload.jsonObject, context)
                                     }
@@ -286,7 +284,6 @@ fun SecurityScreen() {
 
                                 coroutineScope.launch {
                                     SocketManager.sendPacket(OPCode.SETTINGS_CHANGE, JsonObject(payload), { packet ->
-                                        println(packet)
                                         coroutineScope.launch {
                                             AccountManager.processSecuritySettings(packet.payload.jsonObject, context)
                                         }

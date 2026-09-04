@@ -217,7 +217,7 @@ object AccountManager {
                             }
                         }
                     } catch (e : Exception) {
-                        println("EXCEPTION $e")
+                        Log.e("AccountManager", "Exception when trying to edit DataStore: $e")
                     }
                 }
             }
@@ -362,7 +362,7 @@ object AccountManager {
                                                     }
                                                 }
                                             } catch (e : Exception) {
-                                                println("EXCEPTION $e")
+                                                Log.e("AccountManager", "Error while trying to edit DataStore: $e")
                                             }
                                         }
                                     }

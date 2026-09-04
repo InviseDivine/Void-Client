@@ -166,7 +166,6 @@ fun EditProfileScreen() {
                                     val responseData = it.body?.string()
                                     val content =
                                         Json.parseToJsonElement(responseData!!).jsonObject
-                                    println(content)
                                     val token =
                                         content["photos"]!!.jsonObject.values.last().jsonObject["token"]!!.jsonPrimitive.content
 

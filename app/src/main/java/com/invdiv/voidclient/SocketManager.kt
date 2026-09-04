@@ -229,8 +229,6 @@ object SocketManager {
         val payloadBytes = data.sliceArray(10 until (10 + payloadLength))
         var payload = ""
 
-        println("compflag $compFlag paylen $payloadLength original size ${data.size}")
-
         if (payloadBytes.isNotEmpty()) {
             if (compFlag != 0) {
                 if (compFlag == 255) {
@@ -381,8 +379,8 @@ object SocketManager {
         sendChannel.writeFully(packet)
         sendChannel.flush()
 
-        Log.i("SocketManager", "Sent packet with seq $Seq")
-        Log.i("SocketManager", "Payload of sent packet: $payload")
+//        Log.i("SocketManager", "Sent packet with seq $Seq")
+//        Log.i("SocketManager", "Payload of sent packet: $payload")
 
         packetCallbacks.add(PacketCallback(Seq, callback))
 
@@ -396,8 +394,8 @@ object SocketManager {
         sendChannel.writeFully(packet)
         sendChannel.flush()
 
-        Log.i("SocketManager", "Sent packet with seq $Seq")
-        Log.i("SocketManager", "Payload of sent packet: $payload")
+//        Log.i("SocketManager", "Sent packet with seq $Seq")
+//        Log.i("SocketManager", "Payload of sent packet: $payload")
 
         packetCallbacks.add(PacketCallback(Seq, callback))
 
@@ -433,9 +431,9 @@ object SocketManager {
                         totalRead += newBytes
                     }
 
-                    Log.i("SocketManager", "Got packet with size $totalRead")
+//                    Log.i("SocketManager", "Got packet with size $totalRead")
                     val packet = unpackPacket(entirePacket.sliceArray(0..totalRead))
-                    Log.i("SocketManager", "Seq ${packet.seq}; Payload: ${packet.payload}")
+//                    Log.i("SocketManager", "Seq ${packet.seq}; Payload: ${packet.payload}")
 
                     totalRead = 0
 
