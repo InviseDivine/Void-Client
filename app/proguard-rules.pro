@@ -19,3 +19,22 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# TODO: Maybe dont use *?
+
+-keepclassmembers class * {
+    @kotlinx.serialization.Serializable *;
+}
+
+-keep class com.fasterxml.jackson.** { *; }
+-dontwarn com.fasterxml.jackson.**
+
+-keep class org.msgpack.** { *; }
+-dontwarn org.msgpack.**
+
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod
+
+-keep class kotlin.Metadata { *; }
+
+-keep class net.jpountz.lz4.** { *; }
+-keep class com.invdiv.voidclient.** { *; }
